@@ -1,7 +1,7 @@
 # CryptoBookKeeper v0.1.0 - Makefile
 # Orchestrates the complete data pipeline
 
-.PHONY: help setup export-exchanges export-eth stage dbt all clean test
+.PHONY: help setup export-exchanges export-eth stage dbt all clean test troubleshoot
 
 # Default target
 help:
@@ -24,6 +24,7 @@ help:
 	@echo "Utilities:"
 	@echo "  test               - Run all tests"
 	@echo "  clean              - Clean up generated files"
+	@echo "  troubleshoot       - Run troubleshooting checks"
 	@echo "  help               - Show this help message"
 
 # Setup Python environment
@@ -90,7 +91,29 @@ clean:
 	rm -rf dbt/target/
 	rm -rf dbt/dbt_packages/
 	rm -rf logs/*.log
+	rm -f data/cryptobookkeeper.duckdb
 	@echo "Cleanup completed!"
+
+# Run troubleshooting checks
+troubleshoot:
+	@echo "Running troubleshooting checks..."
+	@echo "1. Checking Python version..."
+	python3 --version
+	@echo "2. Checking virtual environment..."
+	@if [ -d "venv" ]; then echo "✅ Virtual environment exists"; else echo "❌ Virtual environment missing - run 'make setup'"; fi
+	@echo "3. Checking .env file..."
+	@if [ -f ".env" ]; then echo "✅ .env file exists"; else echo "❌ .env file missing - copy from .env.template"; fi
+	@echo "4. Checking database path in .env..."
+	@if grep -q "cryptobookkeeper.duckdb" .env 2>/dev/null; then echo "✅ Database path correct"; else echo "❌ Database path incorrect - should be cryptobookkeeper.duckdb"; fi
+	@echo "5. Checking API configuration..."
+	@if grep -q "COINBASE_API_KEY=" .env 2>/dev/null; then echo "✅ Coinbase API configured"; else echo "⚠️  Coinbase API not configured"; fi
+	@echo "6. Checking data directories..."
+	@mkdir -p data/raw data/curated logs
+	@echo "✅ Data directories created"
+	@echo "7. Checking dependencies..."
+	@if [ -f "venv/bin/activate" ]; then . venv/bin/activate && python -c "import ccxt, duckdb, pandas" 2>/dev/null && echo "✅ Dependencies OK" || echo "❌ Dependencies missing - run 'make setup'"; fi
+	@echo ""
+	@echo "Troubleshooting complete! See TROUBLESHOOTING.md for detailed solutions."
 
 # Development helpers
 dev-setup: setup

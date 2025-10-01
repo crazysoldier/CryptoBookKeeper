@@ -168,6 +168,15 @@ The pipeline includes comprehensive data quality checks:
 - **On-chain Costs**: Ethereum RPC calls may have costs
 - **Data Volume**: Large datasets require significant storage
 
+## ⚠️ Known Issues
+
+- **Database Path**: Ensure `.env` uses `cryptobookkeeper.duckdb` (not `crypto_normalizer.duckdb`)
+- **Pandas Compatibility**: May need `pip install pandas==2.3.3 numpy>=1.24.0,<2.0.0`
+- **dbt Conflicts**: Run `make clean` before `make all` to avoid view/table conflicts
+- **On-chain Models**: 2/7 dbt models fail without on-chain data (expected)
+
+See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions.
+
 ## 🤝 Contributing
 
 1. Fork the repository
