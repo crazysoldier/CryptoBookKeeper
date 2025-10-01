@@ -1,9 +1,9 @@
-crypto_normalizer:
+cryptobookkeeper:
   target: dev
   outputs:
     dev:
       type: duckdb
-      path: '../data/crypto_normalizer.duckdb'
+      path: '../data/cryptobookkeeper.duckdb'
       schema: main
       threads: 4
       memory_limit: '4GB'

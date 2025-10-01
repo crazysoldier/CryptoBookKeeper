@@ -1,10 +1,15 @@
-# Crypto Transaction Normalizer
+# CryptoBookKeeper
 
-A minimal project for normalizing cryptocurrency transaction data from exchanges and on-chain sources into a unified format using DuckDB and dbt.
+**Version 0.1.0** - Transaction Normalization Stage
+
+A comprehensive cryptocurrency bookkeeping application that normalizes transaction data from exchanges and on-chain sources into a unified format using DuckDB and dbt. Currently focused on data normalization with plans for full bookkeeping features.
 
 ## 🎯 Overview
 
-This project exports exchange data via CCXT and EVM on-chain data via web3.py, then normalizes everything in DuckDB/Parquet and creates a unified transaction model using dbt.
+CryptoBookKeeper is designed to be a comprehensive cryptocurrency bookkeeping solution. Currently in its initial phase, it focuses on normalizing transaction data from exchanges and on-chain sources into a unified format using DuckDB and dbt.
+
+**Current Stage (v0.1.0)**: Data normalization and unified transaction model
+**Future Plans**: Full bookkeeping features, tax reporting, portfolio tracking, and more.
 
 ## 🏗️ Architecture
 
@@ -181,6 +186,34 @@ For issues and questions:
 - Check the documentation in `project-docs/`
 - Review the Makefile for available commands
 - Check logs in `logs/` directory
+
+---
+
+## 🗺️ Roadmap
+
+### Version 0.1.0 (Current)
+- ✅ Data normalization from exchanges and on-chain
+- ✅ Unified transaction schema
+- ✅ DuckDB + dbt pipeline
+- ✅ Basic data quality checks
+
+### Version 0.2.0 (Planned)
+- 📊 Portfolio tracking and analytics
+- 📈 Performance metrics and reporting
+- 🔄 Automated data refresh
+- 📱 Basic web interface
+
+### Version 0.3.0 (Future)
+- 📋 Tax reporting and compliance
+- 🏦 Multi-exchange portfolio aggregation
+- 📊 Advanced analytics and insights
+- 🔐 Enhanced security features
+
+### Version 1.0.0 (Vision)
+- 🎯 Complete bookkeeping solution
+- 📊 Professional reporting suite
+- 🔄 Real-time data synchronization
+- 📱 Mobile and web applications
 
 ---
 

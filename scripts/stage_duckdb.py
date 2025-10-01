@@ -39,7 +39,7 @@ class DuckDBStager:
     
     def __init__(self):
         """Initialize the stager with configuration."""
-        self.db_path = os.getenv('DUCKDB_PATH', './data/crypto_normalizer.duckdb')
+        self.db_path = os.getenv('DUCKDB_PATH', './data/cryptobookkeeper.duckdb')
         self.raw_data_dir = Path('data/raw')
         self.curated_data_dir = Path('data/curated')
         

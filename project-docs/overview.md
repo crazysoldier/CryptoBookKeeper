@@ -1,8 +1,10 @@
-# Crypto Normalizer - Projektübersicht
+# CryptoBookKeeper - Projektübersicht
+
+**Version 0.1.0** - Transaction Normalization Stage
 
 ## Projektziel
 
-Das **Crypto Normalizer Minimal** ist ein minimales, aber vollständiges System zur Normalisierung von Kryptowährungs-Transaktionsdaten aus verschiedenen Quellen in ein einheitliches, analysierbares Format.
+**CryptoBookKeeper** ist eine umfassende Kryptowährungs-Buchhaltungsanwendung, die derzeit in der Phase der Daten-Normalisierung steht. Das System normalisiert Transaktionsdaten aus verschiedenen Quellen in ein einheitliches, analysierbares Format und soll zu einer vollständigen Buchhaltungslösung ausgebaut werden.
 
 ## Hauptfunktionen
 

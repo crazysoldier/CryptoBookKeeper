@@ -1,9 +1,9 @@
-name: 'crypto_normalizer'
-version: '1.0.0'
+name: 'cryptobookkeeper'
+version: '0.1.0'
 config-version: 2
 
 # This setting configures which "profile" dbt uses for this project.
-profile: 'crypto_normalizer'
+profile: 'cryptobookkeeper'
 
 # These configurations specify where dbt should look for different types of files.
 # The `model-paths` config, for example, states that models in this project can be
@@ -22,7 +22,7 @@ clean-targets:
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
 models:
-  crypto_normalizer:
+  cryptobookkeeper:
     # Config indicated by + and applies to all files under models/example/
     staging:
       materialized: table
@@ -41,5 +41,5 @@ models:
 # Configuring tests
 # Full documentation: https://docs.getdbt.com/docs/configuring-tests
 tests:
-  crypto_normalizer:
+  cryptobookkeeper:
     +store_failures: true

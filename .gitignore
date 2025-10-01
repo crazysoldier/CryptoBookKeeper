@@ -22,6 +22,7 @@ data/raw/**/*.csv
 data/curated/**/*.parquet
 data/**/*.duckdb
 *.duckdb
+data/cryptobookkeeper.duckdb
 
 # Logs
 logs/*.log

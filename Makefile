@@ -1,4 +1,4 @@
-# Crypto Normalizer - Makefile
+# CryptoBookKeeper v0.1.0 - Makefile
 # Orchestrates the complete data pipeline
 
 .PHONY: help setup export-exchanges export-eth stage dbt all clean test
