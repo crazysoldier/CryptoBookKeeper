@@ -1,0 +1,45 @@
+name: 'crypto_normalizer'
+version: '1.0.0'
+config-version: 2
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'crypto_normalizer'
+
+# These configurations specify where dbt should look for different types of files.
+# The `model-paths` config, for example, states that models in this project can be
+# found in the "models/" directory. You probably won't need to change these!
+model-paths: ["models"]
+analysis-paths: ["analysis"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Configuring models
+# Full documentation: https://docs.getdbt.com/docs/configuring-models
+models:
+  crypto_normalizer:
+    # Config indicated by + and applies to all files under models/example/
+    staging:
+      materialized: table
+      indexes:
+        - ['ts_utc']
+        - ['domain', 'source']
+    curated:
+      materialized: table
+      indexes:
+        - ['ts_utc']
+        - ['domain', 'source']
+        - ['base', 'quote']
+    raw:
+      materialized: view
+
+# Configuring tests
+# Full documentation: https://docs.getdbt.com/docs/configuring-tests
+tests:
+  crypto_normalizer:
+    +store_failures: true

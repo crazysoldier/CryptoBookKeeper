@@ -1,0 +1,88 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Raw data tables from DuckDB"
+    tables:
+      - name: exchanges_trades
+        description: "Raw exchange trade data"
+        columns:
+          - name: txid
+            description: "Unique transaction identifier"
+            tests:
+              - not_null
+              - unique
+          - name: datetime
+            description: "Transaction timestamp in UTC"
+            tests:
+              - not_null
+          - name: amount
+            description: "Transaction amount"
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: false
+      
+      - name: exchanges_deposits
+        description: "Raw exchange deposit data"
+        columns:
+          - name: txid
+            description: "Unique transaction identifier"
+            tests:
+              - not_null
+              - unique
+          - name: datetime
+            description: "Transaction timestamp in UTC"
+            tests:
+              - not_null
+          - name: amount
+            description: "Transaction amount"
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: false
+      
+      - name: exchanges_withdrawals
+        description: "Raw exchange withdrawal data"
+        columns:
+          - name: txid
+            description: "Unique transaction identifier"
+            tests:
+              - not_null
+              - unique
+          - name: datetime
+            description: "Transaction timestamp in UTC"
+            tests:
+              - not_null
+          - name: amount
+            description: "Transaction amount"
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: false
+      
+      - name: onchain_transfers
+        description: "Raw on-chain token transfer data"
+        columns:
+          - name: tx_hash
+            description: "Blockchain transaction hash"
+            tests:
+              - not_null
+          - name: from_address
+            description: "Sender address"
+            tests:
+              - not_null
+          - name: to_address
+            description: "Recipient address"
+            tests:
+              - not_null
+          - name: value
+            description: "Transfer value"
+            tests:
+              - not_null
+              - dbt_utils.accepted_range:
+                  min_value: 0
+                  inclusive: true

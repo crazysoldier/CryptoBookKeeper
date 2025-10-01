@@ -1,0 +1,54 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment variables (IMPORTANT - contains API keys!)
+.env
+
+# Data files (contains personal transaction data)
+data/raw/**/*.csv
+data/curated/**/*.parquet
+data/**/*.duckdb
+*.duckdb
+
+# Logs
+logs/*.log
+*.log
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Testing
+.pytest_cache/
+.tox/
+
+# Keep directory structure but ignore contents
+!data/raw/.gitkeep
+!data/curated/.gitkeep
+!logs/.gitkeep

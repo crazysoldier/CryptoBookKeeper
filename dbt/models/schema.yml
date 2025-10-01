@@ -1,0 +1,110 @@
+version: 2
+
+models:
+  - name: raw_exchanges_trades
+    description: "Raw exchange trade data"
+    columns:
+      - name: txid
+        description: "Unique transaction identifier"
+        tests:
+          - not_null
+          - unique
+      - name: datetime
+        description: "Transaction timestamp in UTC"
+        tests:
+          - not_null
+      - name: amount
+        description: "Transaction amount"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: false
+      - name: price
+        description: "Transaction price"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: false
+
+  - name: raw_exchanges_flows
+    description: "Raw exchange deposit and withdrawal data"
+    columns:
+      - name: txid
+        description: "Unique transaction identifier"
+        tests:
+          - not_null
+          - unique
+      - name: datetime
+        description: "Transaction timestamp in UTC"
+        tests:
+          - not_null
+      - name: amount
+        description: "Transaction amount"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: false
+      - name: side
+        description: "Transaction side (deposit/withdrawal)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['deposit', 'withdrawal']
+
+  - name: raw_onchain_transfers
+    description: "Raw on-chain token transfer data"
+    columns:
+      - name: tx_hash
+        description: "Blockchain transaction hash"
+        tests:
+          - not_null
+      - name: from_address
+        description: "Sender address"
+        tests:
+          - not_null
+      - name: to_address
+        description: "Recipient address"
+        tests:
+          - not_null
+      - name: value
+        description: "Transfer value"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: true
+
+  - name: tx_unified
+    description: "Unified transaction model combining all sources"
+    columns:
+      - name: txid
+        description: "Unique transaction identifier"
+        tests:
+          - not_null
+          - unique
+      - name: ts_utc
+        description: "Transaction timestamp in UTC"
+        tests:
+          - not_null
+      - name: amount
+        description: "Transaction amount"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              inclusive: false
+      - name: domain
+        description: "Data source domain (exchange/onchain)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['exchange', 'onchain']
+      - name: side
+        description: "Transaction side"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['buy', 'sell', 'deposit', 'withdrawal', 'transfer']

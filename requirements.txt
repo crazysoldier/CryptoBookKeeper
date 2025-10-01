@@ -1,0 +1,26 @@
+# Exchange APIs
+ccxt==4.3.74
+
+# Database & Data Processing
+duckdb>=0.10.0,!=0.10.3
+polars==0.20.31
+pyarrow==16.1.0
+
+# Blockchain Data
+# ethereum-etl has dependency conflicts with dbt (protobuf version)
+# Will be installed separately or use CLI directly
+
+# dbt
+dbt-core>=1.7,<1.9
+dbt-duckdb>=1.7,<1.9
+
+# Utilities
+python-dotenv==1.0.1
+tqdm==4.66.4
+requests==2.32.3
+
+# Optional: Code Quality
+ruff==0.5.0
+pre-commit==3.7.1
+
+pandas==2.0.3

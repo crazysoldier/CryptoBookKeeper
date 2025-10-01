@@ -1,0 +1,5 @@
+- Halte README und /project-docs stets aktuell (Ziele, Architektur, Schritte, Data Dictionary).
+- Erkläre vor jedem Terminal-Kommando kurz Zweck und erwartete Wirkung; führe dann aus.
+- Nutze Agent-Fähigkeiten: Dateien anlegen, mehrere Dateien ändern, Tests ausführen, Fehler beheben.
+- Frage nur, wenn sicherheitsrelevant; sonst setze die Schritte deterministisch um.
+- Nach jedem größeren Schritt: kurze Statuszusammenfassung, was erstellt/geändert wurde.
