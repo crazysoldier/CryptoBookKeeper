@@ -53,6 +53,9 @@ class DeBankExporter:
         # Scam filtering configuration
         self.filter_scams = os.getenv('DEBANK_FILTER_SCAMS', 'true').lower() == 'true'
         
+        # Token cache to avoid repeated API calls
+        self.token_cache = {}
+        
         # Create output directories
         self.output_dir = Path('data/raw/onchain/ethereum')
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -211,8 +214,65 @@ class DeBankExporter:
         logger.info(f"Total transactions fetched from {chain_id}: {len(all_transactions)} ({pages_fetched} pages)")
         return all_transactions
     
+    def get_token_info(self, token_id: str, chain: str) -> Dict[str, Any]:
+        """Get token symbol and name from DeBank API with caching."""
+        cache_key = f"{chain}:{token_id}"
+        
+        # Check cache first
+        if cache_key in self.token_cache:
+            return self.token_cache[cache_key]
+        
+        # Common token addresses we can resolve without API
+        known_tokens = {
+            '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': {'symbol': 'USDC', 'name': 'USD Coin', 'decimals': 6},
+            '0xaf88d065e77c8cc2239327c5edb3a432268e5831': {'symbol': 'USDC', 'name': 'USD Coin', 'decimals': 6},  # USDC on Arbitrum
+            '0xdac17f958d2ee523a2206206994597c13d831ec7': {'symbol': 'USDT', 'name': 'Tether USD', 'decimals': 6},
+            '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2': {'symbol': 'WETH', 'name': 'Wrapped Ether', 'decimals': 18},
+            '0x82af49447d8a07e3bd95bd0d56f35241523fbab1': {'symbol': 'WETH', 'name': 'Wrapped Ether', 'decimals': 18},  # WETH on Arbitrum
+        }
+        
+        token_id_lower = token_id.lower()
+        if token_id_lower in known_tokens:
+            token_info = known_tokens[token_id_lower]
+            self.token_cache[cache_key] = token_info
+            return token_info
+        
+        # Try to fetch from DeBank API
+        try:
+            if not self.debank_api_key:
+                return {'symbol': token_id[:8], 'name': 'Unknown', 'decimals': 18}
+            
+            url = f"{self.base_url}/token"
+            params = {
+                'id': token_id,
+                'chain_id': chain
+            }
+            
+            response = self.session.get(url, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                token_info = {
+                    'symbol': data.get('symbol', token_id[:8]),
+                    'name': data.get('name', 'Unknown'),
+                    'decimals': data.get('decimals', 18)
+                }
+                self.token_cache[cache_key] = token_info
+                return token_info
+            else:
+                # Fallback
+                token_info = {'symbol': token_id[:8], 'name': 'Unknown', 'decimals': 18}
+                self.token_cache[cache_key] = token_info
+                return token_info
+                
+        except Exception as e:
+            logger.warning(f"Failed to fetch token info for {token_id}: {e}")
+            token_info = {'symbol': token_id[:8], 'name': 'Unknown', 'decimals': 18}
+            self.token_cache[cache_key] = token_info
+            return token_info
+    
     def normalize_transaction(self, tx: Dict, address: str) -> Dict:
-        """Normalize transaction data to our schema."""
+        """Normalize transaction data to our schema with proper token resolution."""
         try:
             # Extract basic transaction info
             tx_hash = tx.get('id', '')
@@ -226,40 +286,104 @@ class DeBankExporter:
                 ts_utc = None
             
             # Extract transaction details
-            tx_type = tx.get('cate_id', 'unknown')
+            cate_id = tx.get('cate_id')
             chain = tx.get('chain', 'eth')
+            project_id = tx.get('project_id', '')
             
             # Extract sends and receives
             sends = tx.get('sends', [])
             receives = tx.get('receives', [])
+            token_approve = tx.get('token_approve')
             
-            # Determine transaction side
-            if sends:
-                side = 'out'
+            # Determine action and extract token info
+            token_symbol = ''
+            token_name = ''
+            token_decimal = 18
+            amount = 0.0
+            contract_address = ''
+            action = 'unknown'
+            from_address = tx.get('tx', {}).get('from_addr', '')
+            to_address = tx.get('tx', {}).get('to_addr', '')
+            
+            # Categorize transaction
+            if cate_id == 'approve' or token_approve:
+                action = 'approve'
+                if token_approve:
+                    token_id = token_approve.get('token_id', '')
+                    contract_address = token_id
+                    amount = token_approve.get('value', 0)
+                    to_address = token_approve.get('spender', to_address)
+                    # Get token info
+                    if token_id:
+                        token_info = self.get_token_info(token_id, chain)
+                        token_symbol = token_info['symbol']
+                        token_name = token_info['name']
+                        token_decimal = token_info['decimals']
+                        
+            elif sends and receives:
+                # Swap
+                action = 'swap'
+                # Use the first send as primary
+                send = sends[0]
+                token_id = send.get('token_id', '')
+                contract_address = token_id
+                amount = send.get('amount', 0)
+                to_address = send.get('to_addr', to_address)
+                if token_id:
+                    token_info = self.get_token_info(token_id, chain)
+                    token_symbol = token_info['symbol']
+                    token_name = token_info['name']
+                    token_decimal = token_info['decimals']
+                    
+            elif sends:
+                # Send/Withdraw
+                action = 'send' if cate_id != 'deposit' else 'deposit'
+                send = sends[0]
+                token_id = send.get('token_id', '')
+                contract_address = token_id
+                amount = send.get('amount', 0)
+                to_address = send.get('to_addr', to_address)
+                if token_id:
+                    token_info = self.get_token_info(token_id, chain)
+                    token_symbol = token_info['symbol']
+                    token_name = token_info['name']
+                    token_decimal = token_info['decimals']
+                    
             elif receives:
-                side = 'in'
-            else:
-                side = 'unknown'
+                # Receive
+                action = 'receive'
+                receive = receives[0]
+                token_id = receive.get('token_id', '')
+                contract_address = token_id
+                amount = receive.get('amount', 0)
+                from_address = receive.get('from_addr', from_address)
+                if token_id:
+                    token_info = self.get_token_info(token_id, chain)
+                    token_symbol = token_info['symbol']
+                    token_name = token_info['name']
+                    token_decimal = token_info['decimals']
             
             return {
                 'tx_hash': tx_hash,
                 'log_index': None,
-                'contract_address': '',
-                'from_address': tx.get('tx', {}).get('from_addr', ''),
-                'to_address': tx.get('tx', {}).get('to_addr', ''),
-                'value': 0,  # Will be calculated from sends/receives
-                'token_symbol': '',
-                'token_decimal': 18,
+                'contract_address': contract_address,
+                'from_address': from_address,
+                'to_address': to_address,
+                'value': abs(amount) if amount else 0,
+                'token_symbol': token_symbol,
+                'token_decimal': token_decimal,
                 'block_number': None,
                 'block_timestamp': ts_utc,
                 'chain': chain,
-                'tx_type': tx_type,
-                'side': side,
+                'tx_type': action,
+                'side': action,
                 'raw_json': json.dumps(tx)
             }
             
         except Exception as e:
             logger.error(f"Error normalizing transaction: {e}")
+            import traceback
+            traceback.print_exc()
             return {}
     
     def export_address_data(self, address: str, chains: List[str] = None) -> None:
