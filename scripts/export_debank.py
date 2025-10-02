@@ -122,41 +122,90 @@ class DeBankExporter:
         except Exception as e:
             logger.warning(f"Failed to update sync log for {source}: {e}")
     
-    def get_user_history(self, address: str, chain_id: str = 'eth', page_count: int = 20) -> List[Dict]:
-        """Get user transaction history from DeBank API."""
+    def get_user_history(self, address: str, chain_id: str = 'eth', page_count: int = 100, 
+                         start_time: Optional[int] = None, max_pages: int = 50) -> List[Dict]:
+        """Get user transaction history from DeBank API with pagination.
+        
+        Args:
+            address: User wallet address
+            chain_id: Chain identifier (e.g., 'eth', 'matic')
+            page_count: Number of transactions per page (max 100)
+            start_time: Unix timestamp to start from (for pagination)
+            max_pages: Maximum number of pages to fetch (safety limit)
+        
+        Returns:
+            List of transaction dictionaries
+        """
         if not self.debank_api_key:
             logger.error("DEBANK_API_KEY required for transaction history")
             return []
         
-        try:
-            url = f"{self.base_url}/user/history_list"
-            params = {
-                'id': address,
-                'chain_id': chain_id,
-                'page_count': page_count
-            }
-            
-            logger.info(f"Fetching history for {address} on {chain_id}")
-            response = self.session.get(url, params=params, timeout=30)
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            # Extract history list
-            if isinstance(data, dict):
-                history_list = data.get('history_list', [])
-            else:
-                history_list = []
-            
-            logger.info(f"Retrieved {len(history_list)} transactions from {chain_id}")
-            return history_list
-            
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to fetch history for {address} on {chain_id}: {e}")
-            return []
-        except Exception as e:
-            logger.error(f"Error processing history for {address}: {e}")
-            return []
+        all_transactions = []
+        current_start_time = start_time
+        pages_fetched = 0
+        
+        logger.info(f"Fetching history for {address} on {chain_id} (pagination enabled)")
+        
+        while pages_fetched < max_pages:
+            try:
+                url = f"{self.base_url}/user/history_list"
+                params = {
+                    'id': address,
+                    'chain_id': chain_id,
+                    'page_count': page_count
+                }
+                
+                # Add start_time for pagination (if not first page)
+                if current_start_time:
+                    params['start_time'] = current_start_time
+                
+                response = self.session.get(url, params=params, timeout=30)
+                response.raise_for_status()
+                
+                data = response.json()
+                
+                # Extract history list
+                if isinstance(data, dict):
+                    history_list = data.get('history_list', [])
+                else:
+                    history_list = []
+                
+                if not history_list:
+                    logger.info(f"No more transactions found on {chain_id} (page {pages_fetched + 1})")
+                    break
+                
+                all_transactions.extend(history_list)
+                pages_fetched += 1
+                
+                logger.info(f"Retrieved {len(history_list)} transactions from {chain_id} (page {pages_fetched}, total: {len(all_transactions)})")
+                
+                # Check if we have more pages
+                # DeBank API: use the timestamp of the last transaction as start_time for next page
+                if len(history_list) < page_count:
+                    # Less than page_count means this is the last page
+                    logger.info(f"Reached last page for {chain_id}")
+                    break
+                
+                # Get timestamp of last transaction for next page
+                last_tx = history_list[-1]
+                current_start_time = last_tx.get('time_at')
+                
+                if not current_start_time:
+                    logger.warning(f"No timestamp found in last transaction, stopping pagination")
+                    break
+                
+                # Small delay to avoid rate limiting
+                time.sleep(0.3)
+                
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Failed to fetch history for {address} on {chain_id} (page {pages_fetched + 1}): {e}")
+                break
+            except Exception as e:
+                logger.error(f"Error processing history for {address} on {chain_id}: {e}")
+                break
+        
+        logger.info(f"Total transactions fetched from {chain_id}: {len(all_transactions)} ({pages_fetched} pages)")
+        return all_transactions
     
     def normalize_transaction(self, tx: Dict, address: str) -> Dict:
         """Normalize transaction data to our schema."""
@@ -230,7 +279,8 @@ class DeBankExporter:
                         last_sync = self.get_last_sync_timestamp(source)
                         logger.info(f"Incremental sync for {source}: fetching transactions after {datetime.fromtimestamp(last_sync)}")
                     
-                    transactions = self.get_user_history(address, chain_id=chain, page_count=100)
+                    # Fetch with pagination (will retrieve ALL transactions)
+                    transactions = self.get_user_history(address, chain_id=chain)
                     
                     # Filter transactions for incremental mode
                     if self.incremental and transactions:
