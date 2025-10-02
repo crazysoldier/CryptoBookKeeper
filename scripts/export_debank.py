@@ -50,6 +50,9 @@ class DeBankExporter:
         self.evm_addresses = [addr.strip().lower() for addr in self.evm_addresses if addr.strip()]
         self.incremental = incremental
         
+        # Scam filtering configuration
+        self.filter_scams = os.getenv('DEBANK_FILTER_SCAMS', 'true').lower() == 'true'
+        
         # Create output directories
         self.output_dir = Path('data/raw/onchain/ethereum')
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -83,6 +86,7 @@ class DeBankExporter:
         logger.info(f"Initialized DeBank exporter in {mode} mode")
         logger.info(f"Start timestamp: {self.start_ts}")
         logger.info(f"Monitoring addresses: {self.evm_addresses}")
+        logger.info(f"Scam filtering: {'ENABLED' if self.filter_scams else 'DISABLED'}")
     
     def get_last_sync_timestamp(self, source: str) -> float:
         """Get last successful sync timestamp for a source."""
@@ -281,6 +285,14 @@ class DeBankExporter:
                     
                     # Fetch with pagination (will retrieve ALL transactions)
                     transactions = self.get_user_history(address, chain_id=chain)
+                    
+                    # Filter scam transactions if enabled
+                    if self.filter_scams and transactions:
+                        original_count = len(transactions)
+                        transactions = [tx for tx in transactions if not tx.get('is_scam', False)]
+                        scam_count = original_count - len(transactions)
+                        if scam_count > 0:
+                            logger.info(f"Filtered out {scam_count} scam transactions from {chain}")
                     
                     # Filter transactions for incremental mode
                     if self.incremental and transactions:
