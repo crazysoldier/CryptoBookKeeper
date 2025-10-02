@@ -133,8 +133,8 @@ class DuckDBStager:
         logger.info("Loading on-chain data from CSV files")
         stats = {}
         
-        # Find all on-chain CSV files
-        onchain_files = list(self.raw_data_dir.glob('onchain/*/*/*.csv'))
+        # Find all on-chain CSV files (DeBank format: onchain/ethereum/*.csv)
+        onchain_files = list(self.raw_data_dir.glob('onchain/*/*.csv'))
         
         if not onchain_files:
             logger.warning("No on-chain CSV files found")
@@ -142,9 +142,11 @@ class DuckDBStager:
         
         for file_path in tqdm(onchain_files, desc="Loading on-chain files"):
             try:
-                # Parse file path to get entity type
+                # Parse file path to get chain
+                # DeBank format: onchain/ethereum/transfers_YYYY-MM.csv
                 parts = file_path.parts
-                entity = parts[-2]  # onchain/{chain}/{entity}/
+                chain = parts[-2]  # onchain/{chain}/
+                entity = "transfers"  # Default entity type for DeBank data
                 
                 # Load CSV with proper types
                 df = pd.read_csv(file_path)
@@ -332,8 +334,36 @@ class DuckDBStager:
         # Clear existing data
         self.conn.execute("DELETE FROM staged_onchain")
         
-        # Stage on-chain data (skip for now - no on-chain data available)
-        logger.info("Skipping on-chain data staging - no on-chain data available")
+        # Stage on-chain data from DeBank
+        try:
+            self.conn.execute("""
+                INSERT INTO staged_onchain
+                SELECT 
+                    'onchain' as domain,
+                    'debank_' || chain as source,
+                    CAST(block_timestamp AS TIMESTAMP) as ts_utc,
+                    tx_hash as txid,
+                    token_symbol as base,
+                    '' as quote,
+                    COALESCE(side, 'unknown') as side,
+                    COALESCE(value, 0.0) as amount,
+                    0.0 as price,
+                    '' as fee_ccy,
+                    0.0 as fee_amt,
+                    from_address as addr_from,
+                    to_address as addr_to,
+                    chain,
+                    token_symbol,
+                    COALESCE(token_decimal, 18) as token_decimal,
+                    raw_json,
+                    EXTRACT(YEAR FROM CAST(block_timestamp AS TIMESTAMP)) as year,
+                    EXTRACT(MONTH FROM CAST(block_timestamp AS TIMESTAMP)) as month
+                FROM raw_onchain_transfers
+                WHERE tx_hash IS NOT NULL AND tx_hash != ''
+            """)
+            logger.info("On-chain data staged successfully")
+        except Exception as e:
+            logger.warning(f"No on-chain data to stage: {e}")
         
         logger.info("Staged tables created successfully")
     
