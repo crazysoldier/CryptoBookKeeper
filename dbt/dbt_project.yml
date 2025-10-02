@@ -23,20 +23,11 @@ clean-targets:
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
 models:
   cryptobookkeeper:
-    # Config indicated by + and applies to all files under models/example/
-    staging:
-      materialized: table
-      indexes:
-        - ['ts_utc']
-        - ['domain', 'source']
+    # Curated models use incremental materialization for efficiency
     curated:
-      materialized: table
-      indexes:
-        - ['ts_utc']
-        - ['domain', 'source']
-        - ['base', 'quote']
-    raw:
-      materialized: view
+      +materialized: incremental
+      +unique_key: txid
+      +on_schema_change: sync_all_columns
 
 # Configuring tests
 # Full documentation: https://docs.getdbt.com/docs/configuring-tests
