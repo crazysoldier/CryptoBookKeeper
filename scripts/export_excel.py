@@ -249,7 +249,7 @@ class ExcelExporter:
                 COALESCE(chain, '') as chain,
                 COALESCE(addr_from, '') as addr_from,
                 COALESCE(addr_to, '') as addr_to
-            FROM tx_unified
+            FROM transactions_unified
             ORDER BY ts_utc DESC
         """
         
@@ -302,7 +302,7 @@ class ExcelExporter:
                 price,
                 COALESCE(amount * price, 0) as total_value,
                 fee_amt
-            FROM tx_unified
+            FROM transactions_unified
             WHERE domain = 'exchange'
             ORDER BY ts_utc DESC
         """
@@ -351,7 +351,7 @@ class ExcelExporter:
                 amount,
                 COALESCE(addr_from, '') as addr_from,
                 COALESCE(addr_to, '') as addr_to
-            FROM tx_unified
+            FROM transactions_unified
             WHERE domain = 'onchain'
             ORDER BY ts_utc DESC
         """
@@ -390,7 +390,7 @@ class ExcelExporter:
                 SUM(CASE WHEN domain = 'exchange' THEN 1 ELSE 0 END) as exchange_count,
                 SUM(CASE WHEN domain = 'onchain' THEN 1 ELSE 0 END) as onchain_count,
                 COUNT(DISTINCT base) as unique_tokens
-            FROM tx_unified
+            FROM transactions_unified
             GROUP BY year
             ORDER BY year DESC
         """
@@ -409,7 +409,7 @@ class ExcelExporter:
         stats = {}
         
         # Total transactions
-        result = self.conn.execute("SELECT COUNT(*) FROM tx_unified").fetchone()
+        result = self.conn.execute("SELECT COUNT(*) FROM transactions_unified").fetchone()
         stats['total_transactions'] = result[0]
         
         # By domain
@@ -417,13 +417,13 @@ class ExcelExporter:
             SELECT 
                 SUM(CASE WHEN domain = 'exchange' THEN 1 ELSE 0 END) as exchange,
                 SUM(CASE WHEN domain = 'onchain' THEN 1 ELSE 0 END) as onchain
-            FROM tx_unified
+            FROM transactions_unified
         """).fetchone()
         stats['exchange_count'] = result[0]
         stats['onchain_count'] = result[1]
         
         # Unique tokens
-        result = self.conn.execute("SELECT COUNT(DISTINCT base) FROM tx_unified WHERE base != ''").fetchone()
+        result = self.conn.execute("SELECT COUNT(DISTINCT base) FROM transactions_unified WHERE base != ''").fetchone()
         stats['unique_tokens'] = result[0]
         
         # Date range
@@ -431,7 +431,7 @@ class ExcelExporter:
             SELECT 
                 MIN(ts_utc)::VARCHAR as min_date,
                 MAX(ts_utc)::VARCHAR as max_date
-            FROM tx_unified
+            FROM transactions_unified
         """).fetchone()
         stats['date_range'] = f"{result[0][:10]} to {result[1][:10]}"
         
@@ -440,8 +440,8 @@ class ExcelExporter:
             SELECT 
                 source,
                 COUNT(*) as count,
-                COUNT(*) * 1.0 / (SELECT COUNT(*) FROM tx_unified) as pct
-            FROM tx_unified
+                COUNT(*) * 1.0 / (SELECT COUNT(*) FROM transactions_unified) as pct
+            FROM transactions_unified
             GROUP BY source
             ORDER BY count DESC
         """).fetchall()
@@ -452,8 +452,8 @@ class ExcelExporter:
             SELECT 
                 COALESCE(chain, 'N/A') as chain,
                 COUNT(*) as count,
-                COUNT(*) * 1.0 / (SELECT COUNT(*) FROM tx_unified WHERE domain = 'onchain') as pct
-            FROM tx_unified
+                COUNT(*) * 1.0 / (SELECT COUNT(*) FROM transactions_unified WHERE domain = 'onchain') as pct
+            FROM transactions_unified
             WHERE domain = 'onchain'
             GROUP BY chain
             ORDER BY count DESC

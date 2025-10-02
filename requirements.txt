@@ -7,12 +7,9 @@ polars==0.20.31
 pyarrow==16.1.0
 
 # Blockchain Data
-# ethereum-etl has dependency conflicts with dbt (protobuf version)
+# ethereum-etl has dependency conflicts (protobuf version)
 # Will be installed separately or use CLI directly
 
-# dbt
-dbt-core>=1.7,<1.9
-dbt-duckdb>=1.7,<1.9
 
 # Utilities
 python-dotenv==1.0.1

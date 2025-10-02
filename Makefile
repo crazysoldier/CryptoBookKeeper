@@ -1,7 +1,7 @@
 # CryptoBookKeeper v0.1.0 - Makefile
 # Orchestrates the complete data pipeline
 
-.PHONY: help setup export-exchanges export-debank export-debank-incremental stage dbt excel all sync clean test troubleshoot
+.PHONY: help setup export-exchanges export-debank export-debank-incremental stage excel all sync clean test troubleshoot
 
 # Default target
 help:
@@ -19,10 +19,9 @@ help:
 	@echo ""
 	@echo "Data Processing:"
 	@echo "  stage                      - Stage raw data in DuckDB and export to Parquet"
-	@echo "  dbt                        - Run dbt models and tests"
 	@echo ""
 	@echo "Complete Pipeline:"
-	@echo "  all                        - Full refresh: export all + stage + dbt"
+	@echo "  all                        - Full refresh: export all + stage"
 	@echo "  sync                       - Incremental sync: new data only (FAST & CHEAP)"
 	@echo ""
 	@echo "Reports & Export:"
@@ -70,23 +69,6 @@ stage:
 	. venv/bin/activate && python scripts/stage_duckdb.py
 	@echo "Data staging completed!"
 
-# Run dbt models
-dbt:
-	@echo "Running dbt models..."
-	. venv/bin/activate && cd dbt && dbt run
-	@echo "dbt models completed!"
-
-# Run dbt tests
-dbt-test:
-	@echo "Running dbt tests..."
-	. venv/bin/activate && cd dbt && dbt test
-	@echo "dbt tests completed!"
-
-# Run dbt docs
-dbt-docs:
-	@echo "Generating dbt docs..."
-	. venv/bin/activate && cd dbt && dbt docs generate
-	@echo "dbt docs generated!"
 
 # Export to Excel
 excel:
@@ -95,17 +77,17 @@ excel:
 	@echo "✅ Excel export completed! Check data/exports/ folder"
 
 # Complete pipeline (FULL REFRESH)
-all: export-exchanges export-debank stage dbt
+all: export-exchanges export-debank stage
 	@echo "Complete pipeline finished successfully!"
 	@echo "⚠️  Full refresh completed. For daily updates, use 'make sync' instead!"
 
 # Incremental sync (RECOMMENDED for daily use)
-sync: export-debank-incremental stage dbt
+sync: export-debank-incremental stage
 	@echo "💰 Incremental sync completed! (saved DeBank units by only fetching new data)"
 	@echo "💡 TIP: Run 'make all' weekly for full validation"
 
 # Run all tests
-test: dbt-test
+test:
 	@echo "All tests completed!"
 
 # Clean up generated files
@@ -117,8 +99,6 @@ clean:
 	rm -rf data/raw/onchain/*/transfers/*.csv
 	rm -rf data/raw/onchain/*/receipts/*.csv
 	rm -rf data/curated/*.parquet
-	rm -rf dbt/target/
-	rm -rf dbt/dbt_packages/
 	rm -rf logs/*.log
 	rm -f data/cryptobookkeeper.duckdb
 	@echo "Cleanup completed!"
@@ -148,7 +128,7 @@ troubleshoot:
 dev-setup: setup
 	@echo "Development setup completed!"
 
-dev-test: export-exchanges stage dbt-test
+dev-test: export-exchanges stage
 	@echo "Development test completed!"
 
 # Production helpers
@@ -172,7 +152,7 @@ status:
 backup:
 	@echo "Creating backup..."
 	@mkdir -p backups
-	@tar -czf backups/cryptobookkeeper_$(shell date +%Y%m%d_%H%M%S).tar.gz data/ dbt/ scripts/ sql/ project-docs/ .env.template requirements.txt README.md
+	@tar -czf backups/cryptobookkeeper_$(shell date +%Y%m%d_%H%M%S).tar.gz data/ scripts/ sql/ project-docs/ .env.template requirements.txt README.md
 	@echo "Backup created in backups/"
 
 # Restore helpers
@@ -211,7 +191,6 @@ quickstart: env-check setup
 docs:
 	@echo "Generating documentation..."
 	@echo "Project documentation is available in project-docs/"
-	@echo "dbt documentation: run 'make dbt-docs' then open dbt/target/index.html"
 
 # Log helpers
 logs:

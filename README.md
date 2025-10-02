@@ -2,11 +2,11 @@
 
 **Version 0.1.0** - Transaction Normalization Stage
 
-A comprehensive cryptocurrency bookkeeping application that normalizes transaction data from exchanges and on-chain sources into a unified format using DuckDB and dbt. Currently focused on data normalization with plans for full bookkeeping features.
+A comprehensive cryptocurrency bookkeeping application that normalizes transaction data from exchanges and on-chain sources into a unified format using DuckDB. Currently focused on data normalization with plans for full bookkeeping features.
 
 ## 🎯 Overview
 
-CryptoBookKeeper is designed to be a comprehensive cryptocurrency bookkeeping solution. Currently in its initial phase, it focuses on normalizing transaction data from exchanges and on-chain sources into a unified format using DuckDB and dbt.
+CryptoBookKeeper is designed to be a comprehensive cryptocurrency bookkeeping solution. Currently in its initial phase, it focuses on normalizing transaction data from exchanges and on-chain sources into a unified format using DuckDB.
 
 **Current Stage (v0.1.0)**: Data normalization and unified transaction model
 **Future Plans**: Full bookkeeping features, tax reporting, portfolio tracking, and more.
@@ -14,10 +14,10 @@ CryptoBookKeeper is designed to be a comprehensive cryptocurrency bookkeeping so
 ## 🏗️ Architecture
 
 ```
-Raw Data Sources → Export Scripts → DuckDB → dbt Models → Unified Schema
-     ↓                ↓              ↓         ↓           ↓
-- Exchanges      - CCXT API     - Staging   - Raw Models  - transactions_unified
-- On-chain       - DeBank API   - Parquet   - Curated     - Standardized format
+Raw Data Sources → Export Scripts → DuckDB → Unified Schema
+     ↓                ↓              ↓         ↓
+- Exchanges      - CCXT API     - Staging   - transactions_unified
+- On-chain       - DeBank API   - Parquet   - Standardized format
                  - Scam Filter
 ```
 
@@ -60,7 +60,6 @@ make export-exchanges         # Export exchange data
 make export-debank            # Export on-chain data (all transactions)
 make export-debank-incremental # Export only new on-chain data
 make stage                    # Stage data in DuckDB
-make dbt                      # Run dbt transformations
 ```
 
 ## 📁 Project Structure
@@ -77,11 +76,6 @@ make dbt                      # Run dbt transformations
 │   └── stage_duckdb.py
 ├── sql/                   # Database initialization
 │   └── duckdb_init_simple.sql
-├── dbt/                   # dbt project
-│   ├── models/
-│   │   ├── raw/          # Raw data models
-│   │   └── curated/     # Curated models
-│   └── dbt_project.yml
 ├── data/                  # Data storage
 │   ├── raw/              # Raw CSV exports
 │   └── curated/          # Processed Parquet files
@@ -149,7 +143,6 @@ All transactions are normalized into a unified schema:
 - **DeBank Cloud API** - On-chain data across 123 chains
 - **DuckDB** - In-process OLAP database with upsert support
 - **Polars** - Fast DataFrame processing
-- **dbt** - Data transformation with incremental models
 - **Parquet** - Columnar storage format
 
 ## 📈 Available Commands
@@ -160,7 +153,6 @@ make export-exchanges         # Export data from exchanges
 make export-debank            # Export on-chain data (full refresh)
 make export-debank-incremental # Export only new on-chain data (saves API costs)
 make stage                    # Stage data in DuckDB with upsert
-make dbt                      # Run dbt transformations
 make excel                    # Export transactions to formatted Excel workbook
 make all                      # Full pipeline (full refresh)
 make sync                     # Incremental pipeline (recommended for daily use)
@@ -190,8 +182,6 @@ The pipeline includes comprehensive data quality checks:
 ## ⚠️ Known Issues
 
 - **Pandas Compatibility**: May need `pip install pandas==2.3.3 numpy>=1.24.0,<2.0.0`
-- **dbt Conflicts**: Run `make clean` before `make all` to avoid view/table conflicts
-- **On-chain Models**: 2/7 dbt models fail without on-chain data (expected)
 
 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions.
 
@@ -328,7 +318,7 @@ For issues and questions:
 ### Version 0.1.0 (Current)
 - ✅ Data normalization from exchanges and on-chain
 - ✅ Unified transaction schema
-- ✅ DuckDB + dbt pipeline
+- ✅ DuckDB pipeline with upsert support
 - ✅ Basic data quality checks
 
 ### Version 0.2.0 (Planned)
