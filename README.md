@@ -17,7 +17,8 @@ CryptoBookKeeper is designed to be a comprehensive cryptocurrency bookkeeping so
 Raw Data Sources → Export Scripts → DuckDB → dbt Models → Unified Schema
      ↓                ↓              ↓         ↓           ↓
 - Exchanges      - CCXT API     - Staging   - Raw Models  - transactions_unified
-- On-chain       - web3.py      - Parquet   - Curated     - Standardized format
+- On-chain       - DeBank API   - Parquet   - Curated     - Standardized format
+                 - Scam Filter
 ```
 
 ## 🚀 Quick Start
@@ -47,15 +48,19 @@ nano .env
 
 ### 3. Run Pipeline
 ```bash
-# Run everything
+# Full refresh (first time or complete re-sync)
 make all
 
+# Incremental sync (recommended for daily updates - saves API costs!)
+make sync
+
 # Or run individual steps
-make setup          # Setup environment
-make export-exchanges  # Export exchange data
-make export-eth     # Export Ethereum on-chain data
-make stage          # Stage data in DuckDB
-make dbt            # Run dbt transformations
+make setup                    # Setup environment
+make export-exchanges         # Export exchange data
+make export-debank            # Export on-chain data (all transactions)
+make export-debank-incremental # Export only new on-chain data
+make stage                    # Stage data in DuckDB
+make dbt                      # Run dbt transformations
 ```
 
 ## 📁 Project Structure
@@ -98,10 +103,18 @@ COINBASE_API_KEY=your_key_here
 COINBASE_SECRET=your_secret_here
 COINBASE_PASSPHRASE=your_passphrase_here
 
-# Ethereum RPC endpoint
-ETH_RPC_URL=https://eth-mainnet.alchemyapi.io/v2/your_key
+# DeBank Cloud API (for on-chain data)
+DEBANK_API_KEY=your_debank_api_key
 
-# Ethereum addresses to track
+# Chains to monitor (comma-separated)
+# See DEBANK_CHAINS.md for all 123 supported chains
+DEBANK_CHAINS=eth,bsc,matic,arb,op,base,avax
+
+# Scam token filtering (recommended: true)
+# Filters out spam/airdrop tokens marked by DeBank
+DEBANK_FILTER_SCAMS=true
+
+# Ethereum addresses to track (comma-separated, lowercase)
 EVM_ADDRESSES=0x1234...,0x5678...
 ```
 
@@ -133,40 +146,45 @@ All transactions are normalized into a unified schema:
 
 - **Python 3.11+** - Core language
 - **CCXT** - Exchange API integration
-- **web3.py** - Ethereum blockchain access
-- **DuckDB** - In-process OLAP database
+- **DeBank Cloud API** - On-chain data across 123 chains
+- **DuckDB** - In-process OLAP database with upsert support
 - **Polars** - Fast DataFrame processing
-- **dbt** - Data transformation
+- **dbt** - Data transformation with incremental models
 - **Parquet** - Columnar storage format
 
 ## 📈 Available Commands
 
 ```bash
-make setup              # Setup virtual environment and dependencies
-make export-exchanges   # Export data from exchanges
-make export-eth         # Export Ethereum on-chain data
-make stage              # Stage data in DuckDB
-make dbt                # Run dbt transformations
-make all                # Run complete pipeline
-make clean              # Clean generated files
-make test               # Run tests
+make setup                    # Setup virtual environment and dependencies
+make export-exchanges         # Export data from exchanges
+make export-debank            # Export on-chain data (full refresh)
+make export-debank-incremental # Export only new on-chain data (saves API costs)
+make stage                    # Stage data in DuckDB with upsert
+make dbt                      # Run dbt transformations
+make all                      # Full pipeline (full refresh)
+make sync                     # Incremental pipeline (recommended for daily use)
+make clean                    # Clean generated files
+make test                     # Run tests
 ```
 
-## 🔍 Data Quality
+## 🔍 Data Quality & Filtering
 
 The pipeline includes comprehensive data quality checks:
-- Timestamp normalization to UTC
-- Type casting and validation
-- Duplicate detection
-- Missing value handling
-- Schema validation
+- **Scam Token Filtering**: Automatically filters out spam/airdrop tokens marked by DeBank (60%+ of transactions on some chains!)
+- **Timestamp normalization** to UTC
+- **Type casting and validation**
+- **Duplicate detection** via DuckDB upsert (INSERT OR REPLACE)
+- **Missing value handling**
+- **Schema validation**
+- **Incremental loading** to save API costs and improve performance
 
 ## 📝 Known Limitations
 
 - **Rate Limits**: Exchange APIs have rate limits
 - **Historical Data**: Limited by exchange API availability
-- **On-chain Costs**: Ethereum RPC calls may have costs
+- **DeBank API Costs**: DeBank Cloud API charges per API unit (use incremental mode!)
 - **Data Volume**: Large datasets require significant storage
+- **Scam Filtering**: Only works for chains supported by DeBank (123 chains)
 
 ## ⚠️ Known Issues
 
@@ -188,7 +206,40 @@ We use **DeBank Cloud API** for comprehensive on-chain data across multiple EVM 
 2. Purchase units (pay with USDC)
 3. Copy your Access Key
 4. Add to `.env`: `DEBANK_API_KEY=your_access_key`
-5. Add chains: `DEBANK_CHAINS=eth,polygon,arbitrum,optimism`
+5. Add chains: `DEBANK_CHAINS=eth,matic,arb,op,base,avax`
+6. Enable scam filtering: `DEBANK_FILTER_SCAMS=true` (recommended)
+
+**Scam Token Filtering:**
+
+CryptoBookKeeper automatically filters out spam and scam tokens using DeBank's `is_scam` flag:
+
+```bash
+# Enable scam filtering (default: true)
+DEBANK_FILTER_SCAMS=true
+
+# Disable to keep all transactions (not recommended)
+DEBANK_FILTER_SCAMS=false
+```
+
+**Why filter scams?**
+- **60%+ of transactions** on some chains (esp. Polygon) are spam tokens
+- **100% of Polygon transactions** in test data were scam airdrops
+- **Cleaner data** = better insights and reports
+- **Saves time** analyzing only legitimate transactions
+
+**Example Results:**
+```
+Chain    Total Fetched  Scams Filtered  Clean Data
+---------------------------------------------------
+ETH              20           1 (5%)         19
+MATIC            20          20 (100%)        0
+ARB              20          10 (50%)        10
+OP               20          17 (85%)         3
+BASE             20          13 (65%)         7
+AVAX              1           0 (0%)          1
+---------------------------------------------------
+TOTAL           101          61 (60%)        40
+```
 
 **Important:** 
 - API endpoint: `https://pro-openapi.debank.com/v1`
