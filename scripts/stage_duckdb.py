@@ -160,16 +160,27 @@ class DuckDBStager:
                 
                 # Insert into appropriate table
                 table_name = f"raw_onchain_{entity}"
-                self.conn.execute(f"DROP TABLE IF EXISTS {table_name}")
                 
-                # Create table from DataFrame
-                self.conn.register('temp_df', df_cleaned)
-                self.conn.execute(f"""
-                    CREATE TABLE {table_name} AS 
-                    SELECT * FROM temp_df
-                """)
+                # Create table if it doesn't exist (first file)
+                try:
+                    self.conn.execute(f"SELECT COUNT(*) FROM {table_name}")
+                except:
+                    # Table doesn't exist, create it
+                    self.conn.register('temp_df', df_cleaned)
+                    self.conn.execute(f"""
+                        CREATE TABLE {table_name} AS 
+                        SELECT * FROM temp_df
+                    """)
+                    stats[f"onchain_{entity}"] = len(df_cleaned)
+                else:
+                    # Table exists, append data
+                    self.conn.register('temp_df', df_cleaned)
+                    self.conn.execute(f"""
+                        INSERT INTO {table_name}
+                        SELECT * FROM temp_df
+                    """)
+                    stats[f"onchain_{entity}"] = stats.get(f"onchain_{entity}", 0) + len(df_cleaned)
                 
-                stats[f"onchain_{entity}"] = len(df_cleaned)
                 logger.info(f"Loaded {len(df_cleaned)} records from {file_path}")
                 
             except Exception as e:
