@@ -195,7 +195,7 @@ We use **DeBank Cloud API** for comprehensive on-chain data across multiple EVM 
 - Authentication: Use `AccessKey` header (not `Bearer`)
 - Rate limit: 100 requests/second
 
-See [BLOCKCHAIN_DATA_GUIDE.md](BLOCKCHAIN_DATA_GUIDE.md) for alternative providers.
+See [DEBANK_SETUP.md](DEBANK_SETUP.md) for detailed setup instructions.
 
 ## 🤝 Contributing
 
