@@ -100,5 +100,21 @@ CREATE TABLE IF NOT EXISTS curated.transactions_unified (
 );
 
 -- =============================================================================
+-- METADATA TABLES (For Incremental Loading)
+-- =============================================================================
+
+-- Sync log table to track incremental loads
+CREATE TABLE IF NOT EXISTS sync_log (
+    source VARCHAR PRIMARY KEY,          -- e.g., 'coinbase_trades', 'debank_eth'
+    last_sync_ts TIMESTAMP,              -- Last successful sync timestamp
+    last_txid VARCHAR,                   -- Last transaction ID (for pagination)
+    sync_count INTEGER,                  -- Number of records in last sync
+    sync_status VARCHAR,                 -- 'success', 'partial', 'failed'
+    error_message VARCHAR,               -- Error details if failed
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================================================
 -- INITIALIZATION COMPLETE
 -- =============================================================================

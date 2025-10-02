@@ -1,31 +1,37 @@
 # CryptoBookKeeper v0.1.0 - Makefile
 # Orchestrates the complete data pipeline
 
-.PHONY: help setup export-exchanges export-eth stage dbt all clean test troubleshoot
+.PHONY: help setup export-exchanges export-debank export-debank-incremental stage dbt all sync clean test troubleshoot
 
 # Default target
 help:
-	@echo "Crypto Normalizer - Available Commands:"
+	@echo "CryptoBookKeeper v0.1.0 - Available Commands:"
 	@echo ""
 	@echo "Setup:"
-	@echo "  setup              - Set up Python environment and install dependencies"
+	@echo "  setup                      - Set up Python environment and install dependencies"
 	@echo ""
-	@echo "Data Export:"
-	@echo "  export-exchanges   - Export data from exchanges (CCXT)"
-	@echo "  export-eth         - Export on-chain Ethereum data (web3.py)"
+	@echo "Data Export (Full Refresh):"
+	@echo "  export-exchanges           - Export ALL data from exchanges (CCXT)"
+	@echo "  export-debank              - Export ALL on-chain data via DeBank API"
+	@echo ""
+	@echo "Data Export (Incremental - RECOMMENDED):"
+	@echo "  export-debank-incremental  - Export only NEW on-chain data (saves DeBank units!)"
 	@echo ""
 	@echo "Data Processing:"
-	@echo "  stage              - Stage raw data in DuckDB and export to Parquet"
-	@echo "  dbt                - Run dbt models and tests"
+	@echo "  stage                      - Stage raw data in DuckDB and export to Parquet"
+	@echo "  dbt                        - Run dbt models and tests"
 	@echo ""
 	@echo "Complete Pipeline:"
-	@echo "  all                - Run complete pipeline (export + stage + dbt)"
+	@echo "  all                        - Full refresh: export all + stage + dbt"
+	@echo "  sync                       - Incremental sync: new data only (FAST & CHEAP)"
 	@echo ""
 	@echo "Utilities:"
-	@echo "  test               - Run all tests"
-	@echo "  clean              - Clean up generated files"
-	@echo "  troubleshoot       - Run troubleshooting checks"
-	@echo "  help               - Show this help message"
+	@echo "  test                       - Run all tests"
+	@echo "  clean                      - Clean up generated files"
+	@echo "  troubleshoot               - Run troubleshooting checks"
+	@echo "  help                       - Show this help message"
+	@echo ""
+	@echo "💡 TIP: Use 'make sync' for daily updates (saves 90%+ DeBank units!)"
 
 # Setup Python environment
 setup:
@@ -41,11 +47,19 @@ export-exchanges:
 	. venv/bin/activate && python scripts/export_exchanges.py
 	@echo "Exchange data export completed!"
 
-# Export on-chain data via DeBank API
+# Export on-chain data via DeBank API (FULL REFRESH)
 export-debank:
-	@echo "Exporting on-chain data via DeBank API..."
+	@echo "Exporting ALL on-chain data via DeBank API..."
+	@echo "⚠️  This will fetch all transactions since START_TS (may use many DeBank units)"
 	. venv/bin/activate && python scripts/export_debank.py
 	@echo "DeBank data export completed!"
+
+# Export on-chain data via DeBank API (INCREMENTAL - RECOMMENDED)
+export-debank-incremental:
+	@echo "Exporting NEW on-chain data via DeBank API (incremental mode)..."
+	@echo "💰 This saves DeBank units by only fetching new transactions!"
+	. venv/bin/activate && python scripts/export_debank.py --incremental
+	@echo "DeBank incremental export completed!"
 
 # Stage data in DuckDB
 stage:
@@ -71,9 +85,15 @@ dbt-docs:
 	. venv/bin/activate && cd dbt && dbt docs generate
 	@echo "dbt docs generated!"
 
-# Complete pipeline
+# Complete pipeline (FULL REFRESH)
 all: export-exchanges export-debank stage dbt
 	@echo "Complete pipeline finished successfully!"
+	@echo "⚠️  Full refresh completed. For daily updates, use 'make sync' instead!"
+
+# Incremental sync (RECOMMENDED for daily use)
+sync: export-debank-incremental stage dbt
+	@echo "💰 Incremental sync completed! (saved DeBank units by only fetching new data)"
+	@echo "💡 TIP: Run 'make all' weekly for full validation"
 
 # Run all tests
 test: dbt-test
