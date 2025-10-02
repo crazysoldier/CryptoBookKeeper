@@ -227,6 +227,9 @@ class DuckDBStager:
                 'currency', 'amount', 'status', 'address', 'tag', 'raw_json'
             ]
         else:  # trades
+            # For trades: create symbol from base/quote if it doesn't exist
+            if 'symbol' not in df.columns and 'base' in df.columns and 'quote' in df.columns:
+                df['symbol'] = df['base'] + '/' + df['quote']
             required_columns = [
                 'source', 'exchange', 'account', 'txid', 'orderid', 'datetime',
                 'symbol', 'side', 'amount', 'price', 'cost', 'fee', 'fee_currency', 'raw_json'
@@ -356,8 +359,16 @@ class DuckDBStager:
                     source,
                     datetime as ts_utc,
                     txid,
-                    symbol as base,
-                    '' as quote,
+                    -- Split symbol (BTC/USDC) to get base
+                    CASE 
+                        WHEN POSITION('/' IN symbol) > 0 THEN SPLIT_PART(symbol, '/', 1)
+                        ELSE symbol
+                    END as base,
+                    -- Split symbol to get quote
+                    CASE 
+                        WHEN POSITION('/' IN symbol) > 0 THEN SPLIT_PART(symbol, '/', 2)
+                        ELSE ''
+                    END as quote,
                     side,
                     amount,
                     price,
