@@ -29,8 +29,8 @@ models:
       +unique_key: txid
       +on_schema_change: sync_all_columns
 
-# Configuring tests
-# Full documentation: https://docs.getdbt.com/docs/configuring-tests
-tests:
+# Configuring data tests (new syntax)
+# Full documentation: https://docs.getdbt.com/docs/build/data-tests
+data_tests:
   cryptobookkeeper:
     +store_failures: true
