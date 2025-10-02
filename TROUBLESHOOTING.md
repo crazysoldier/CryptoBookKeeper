@@ -6,18 +6,19 @@
 
 **Problem**: `Table with name raw_exchanges_trades does not exist!` errors in dbt.
 
-**Root Cause**: The `.env` file contains the old database path `crypto_normalizer.duckdb` instead of `cryptobookkeeper.duckdb`.
+**Root Cause**: Database not initialized or wrong database path in `.env`.
 
 **Solution**:
 ```bash
 # Check your .env file
 grep DUCKDB_PATH .env
 
-# If it shows the old path, update it:
-sed -i '' 's|DUCKDB_PATH=./data/crypto_normalizer.duckdb|DUCKDB_PATH=./data/cryptobookkeeper.duckdb|' .env
+# Should be: DUCKDB_PATH=./data/cryptobookkeeper.duckdb
+# If wrong, manually edit .env and fix the path
 
-# Or manually edit .env and change:
-# DUCKDB_PATH=./data/cryptobookkeeper.duckdb
+# Then rebuild:
+make clean
+make all
 ```
 
 ### 2. Pandas/Numpy Compatibility Issues

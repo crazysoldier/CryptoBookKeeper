@@ -166,13 +166,13 @@ status:
 	@echo "Curated data files:"
 	@find data/curated -name "*.parquet" | wc -l | xargs echo "  Parquet files:"
 	@echo "Database size:"
-	@du -h data/crypto_normalizer.duckdb 2>/dev/null || echo "  Database not found"
+	@du -h data/cryptobookkeeper.duckdb 2>/dev/null || echo "  Database not found"
 
 # Backup helpers
 backup:
 	@echo "Creating backup..."
 	@mkdir -p backups
-	@tar -czf backups/crypto_normalizer_$(shell date +%Y%m%d_%H%M%S).tar.gz data/ dbt/ scripts/ sql/ project-docs/ .env.template requirements.txt README.md
+	@tar -czf backups/cryptobookkeeper_$(shell date +%Y%m%d_%H%M%S).tar.gz data/ dbt/ scripts/ sql/ project-docs/ .env.template requirements.txt README.md
 	@echo "Backup created in backups/"
 
 # Restore helpers
@@ -221,9 +221,9 @@ logs:
 # Database helpers
 db-info:
 	@echo "Database information:"
-	@if [ -f data/crypto_normalizer.duckdb ]; then \
+	@if [ -f data/cryptobookkeeper.duckdb ]; then \
 		echo "✓ Database exists"; \
-		du -h data/crypto_normalizer.duckdb; \
+		du -h data/cryptobookkeeper.duckdb; \
 	else \
 		echo "✗ Database not found - run 'make stage' first"; \
 	fi

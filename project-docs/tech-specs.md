@@ -303,7 +303,7 @@ df.write_parquet(
 ```yaml
 # dbt_project.yml
 models:
-  crypto_normalizer:
+  cryptobookkeeper:
     staging:
       materialized: table
     curated:
@@ -354,7 +354,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('logs/crypto_normalizer.log'),
+        logging.FileHandler('logs/cryptobookkeeper.log'),
         logging.StreamHandler()
     ]
 )
