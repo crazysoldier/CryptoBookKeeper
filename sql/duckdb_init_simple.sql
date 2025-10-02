@@ -11,15 +11,15 @@ PRAGMA memory_limit='2GB';
 PRAGMA threads=2;
 
 -- =============================================================================
--- RAW DATA TABLES
+-- RAW DATA TABLES (with unique constraints for upsert behavior)
 -- =============================================================================
 
 -- Exchange trades table
-CREATE TABLE IF NOT EXISTS raw.exchanges_trades (
-    source VARCHAR,
+CREATE TABLE IF NOT EXISTS raw_exchanges_trades (
+    source VARCHAR NOT NULL,
     exchange VARCHAR,
     account VARCHAR,
-    txid VARCHAR,
+    txid VARCHAR NOT NULL,
     orderid VARCHAR,
     datetime TIMESTAMP,
     symbol VARCHAR,
@@ -29,52 +29,59 @@ CREATE TABLE IF NOT EXISTS raw.exchanges_trades (
     cost DOUBLE,
     fee DOUBLE,
     fee_currency VARCHAR,
-    raw_json VARCHAR
+    raw_json VARCHAR,
+    PRIMARY KEY (source, txid)  -- Composite key for deduplication
 );
 
 -- Exchange deposits table
-CREATE TABLE IF NOT EXISTS raw.exchanges_deposits (
-    source VARCHAR,
+CREATE TABLE IF NOT EXISTS raw_exchanges_deposits (
+    source VARCHAR NOT NULL,
     exchange VARCHAR,
     account VARCHAR,
-    txid VARCHAR,
+    txid VARCHAR NOT NULL,
     datetime TIMESTAMP,
     currency VARCHAR,
     amount DOUBLE,
     status VARCHAR,
     address VARCHAR,
     tag VARCHAR,
-    raw_json VARCHAR
+    raw_json VARCHAR,
+    PRIMARY KEY (source, txid)  -- Composite key for deduplication
 );
 
 -- Exchange withdrawals table
-CREATE TABLE IF NOT EXISTS raw.exchanges_withdrawals (
-    source VARCHAR,
+CREATE TABLE IF NOT EXISTS raw_exchanges_withdrawals (
+    source VARCHAR NOT NULL,
     exchange VARCHAR,
     account VARCHAR,
-    txid VARCHAR,
+    txid VARCHAR NOT NULL,
     datetime TIMESTAMP,
     currency VARCHAR,
     amount DOUBLE,
     status VARCHAR,
     address VARCHAR,
     tag VARCHAR,
-    raw_json VARCHAR
+    raw_json VARCHAR,
+    PRIMARY KEY (source, txid)  -- Composite key for deduplication
 );
 
 -- On-chain transfers table
-CREATE TABLE IF NOT EXISTS raw.onchain_transfers (
-    source VARCHAR,
-    blockchain VARCHAR,
-    txid VARCHAR,
+CREATE TABLE IF NOT EXISTS raw_onchain_transfers (
+    chain VARCHAR NOT NULL,
+    tx_hash VARCHAR NOT NULL,
+    log_index INTEGER,
     block_number BIGINT,
     block_timestamp TIMESTAMP,
     from_address VARCHAR,
     to_address VARCHAR,
-    token_address VARCHAR,
+    contract_address VARCHAR,
     token_symbol VARCHAR,
-    amount DOUBLE,
-    raw_json VARCHAR
+    token_decimal INTEGER,
+    value DOUBLE,
+    side VARCHAR,
+    tx_type VARCHAR,
+    raw_json VARCHAR,
+    PRIMARY KEY (chain, tx_hash, log_index)  -- Composite key (multiple logs per tx)
 );
 
 -- =============================================================================

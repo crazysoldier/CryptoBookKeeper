@@ -80,8 +80,8 @@ class DuckDBStager:
         pass
     
     def load_exchange_data(self) -> Dict[str, int]:
-        """Load all exchange data from CSV files."""
-        logger.info("Loading exchange data from CSV files")
+        """Load all exchange data from CSV files using INSERT OR REPLACE for upserts."""
+        logger.info("Loading exchange data from CSV files (upsert mode)")
         stats = {}
         
         # Find all exchange CSV files
@@ -106,21 +106,40 @@ class DuckDBStager:
                     continue
                 
                 # Clean and type the data
-                df_cleaned = self._clean_exchange_data(df)
+                df_cleaned = self._clean_exchange_data(df, entity)
                 
-                # Insert into appropriate table
+                # Add source column if not present
+                if 'source' not in df_cleaned.columns:
+                    df_cleaned['source'] = f"{exchange}_{entity}"
+                
+                # Insert into appropriate table using INSERT OR REPLACE
                 table_name = f"raw_exchanges_{entity}"
-                self.conn.execute(f"DROP TABLE IF EXISTS {table_name}")
                 
-                # Create table from DataFrame
+                # Register DataFrame
                 self.conn.register('temp_df', df_cleaned)
-                self.conn.execute(f"""
-                    CREATE TABLE {table_name} AS 
-                    SELECT * FROM temp_df
-                """)
+                
+                # Use INSERT OR REPLACE for upsert behavior
+                # This automatically handles duplicates based on PRIMARY KEY (source, txid)
+                # Explicitly list columns to ensure correct order
+                if entity in ['deposits', 'withdrawals']:
+                    self.conn.execute(f"""
+                        INSERT OR REPLACE INTO {table_name}
+                        (source, exchange, account, txid, datetime, currency, amount, status, address, tag, raw_json)
+                        SELECT source, exchange, account, txid, datetime, currency, amount, status, address, tag, raw_json
+                        FROM temp_df
+                    """)
+                else:  # trades
+                    self.conn.execute(f"""
+                        INSERT OR REPLACE INTO {table_name}
+                        (source, exchange, account, txid, orderid, datetime, symbol, side,
+                         amount, price, cost, fee, fee_currency, raw_json)
+                        SELECT source, exchange, account, txid, orderid, datetime, symbol, side,
+                               amount, price, cost, fee, fee_currency, raw_json
+                        FROM temp_df
+                    """)
                 
                 stats[f"{exchange}_{entity}"] = len(df_cleaned)
-                logger.info(f"Loaded {len(df_cleaned)} records from {file_path}")
+                logger.info(f"Upserted {len(df_cleaned)} records from {file_path}")
                 
             except Exception as e:
                 logger.error(f"Failed to load {file_path}: {e}")
@@ -129,8 +148,8 @@ class DuckDBStager:
         return stats
     
     def load_onchain_data(self) -> Dict[str, int]:
-        """Load all on-chain data from CSV files."""
-        logger.info("Loading on-chain data from CSV files")
+        """Load all on-chain data from CSV files using INSERT OR REPLACE for upserts."""
+        logger.info("Loading on-chain data from CSV files (upsert mode)")
         stats = {}
         
         # Find all on-chain CSV files (DeBank format: onchain/ethereum/*.csv)
@@ -155,33 +174,40 @@ class DuckDBStager:
                     logger.debug(f"Empty file: {file_path}")
                     continue
                 
-                # Clean and type the data
+                # Clean and type the data (this adds chain column, tx_hash, etc.)
                 df_cleaned = self._clean_onchain_data(df)
                 
-                # Insert into appropriate table
+                # Ensure chain column is set correctly
+                if 'chain' not in df_cleaned.columns or df_cleaned['chain'].isna().all():
+                    df_cleaned['chain'] = chain
+                
+                # Ensure log_index exists (default to 0 for single-log transactions)
+                if 'log_index' not in df_cleaned.columns:
+                    df_cleaned['log_index'] = 0
+                
+                # Insert into appropriate table using INSERT OR REPLACE
                 table_name = f"raw_onchain_{entity}"
                 
-                # Create table if it doesn't exist (first file)
-                try:
-                    self.conn.execute(f"SELECT COUNT(*) FROM {table_name}")
-                except:
-                    # Table doesn't exist, create it
-                    self.conn.register('temp_df', df_cleaned)
-                    self.conn.execute(f"""
-                        CREATE TABLE {table_name} AS 
-                        SELECT * FROM temp_df
-                    """)
-                    stats[f"onchain_{entity}"] = len(df_cleaned)
-                else:
-                    # Table exists, append data
-                    self.conn.register('temp_df', df_cleaned)
-                    self.conn.execute(f"""
-                        INSERT INTO {table_name}
-                        SELECT * FROM temp_df
-                    """)
-                    stats[f"onchain_{entity}"] = stats.get(f"onchain_{entity}", 0) + len(df_cleaned)
+                # Register DataFrame
+                self.conn.register('temp_df', df_cleaned)
                 
-                logger.info(f"Loaded {len(df_cleaned)} records from {file_path}")
+                # Use INSERT OR REPLACE for upsert behavior
+                # This automatically handles duplicates based on PRIMARY KEY (chain, tx_hash, log_index)
+                # Explicitly list columns to ensure correct order
+                self.conn.execute(f"""
+                    INSERT OR REPLACE INTO {table_name} 
+                    (chain, tx_hash, log_index, block_number, block_timestamp,
+                     from_address, to_address, contract_address, token_symbol, token_decimal,
+                     value, side, tx_type, raw_json)
+                    SELECT chain, tx_hash, log_index, block_number, block_timestamp,
+                           from_address, to_address, contract_address, token_symbol, token_decimal,
+                           value, side, tx_type, raw_json
+                    FROM temp_df
+                """)
+                
+                count = len(df_cleaned)
+                stats[f"onchain_{entity}"] = stats.get(f"onchain_{entity}", 0) + count
+                logger.info(f"Upserted {count} records from {file_path}")
                 
             except Exception as e:
                 logger.error(f"Failed to load {file_path}: {e}")
@@ -189,14 +215,22 @@ class DuckDBStager:
         
         return stats
     
-    def _clean_exchange_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _clean_exchange_data(self, df: pd.DataFrame, entity_type: str = 'trades') -> pd.DataFrame:
         """Clean and type exchange data."""
-        # Ensure required columns exist
-        required_columns = [
-            'source', 'exchange', 'account', 'txid', 'orderid', 'datetime',
-            'base', 'quote', 'side', 'amount', 'price', 'fee_currency',
-            'fee_amount', 'address', 'status', 'raw_json'
-        ]
+        # Map columns based on entity type
+        if entity_type in ['deposits', 'withdrawals']:
+            # For deposits/withdrawals: base -> currency
+            if 'base' in df.columns and 'currency' not in df.columns:
+                df['currency'] = df['base']
+            required_columns = [
+                'source', 'exchange', 'account', 'txid', 'datetime',
+                'currency', 'amount', 'status', 'address', 'tag', 'raw_json'
+            ]
+        else:  # trades
+            required_columns = [
+                'source', 'exchange', 'account', 'txid', 'orderid', 'datetime',
+                'symbol', 'side', 'amount', 'price', 'cost', 'fee', 'fee_currency', 'raw_json'
+            ]
         
         for col in required_columns:
             if col not in df.columns:
@@ -210,53 +244,76 @@ class DuckDBStager:
         
         # Clean string columns
         string_columns = ['source', 'exchange', 'account', 'txid', 'orderid', 
-                         'base', 'quote', 'side', 'fee_currency', 'address', 'status']
-        for col in string_columns:
-            df[col] = df[col].astype(str).fillna('')
-        
-        return df
-    
-    def _clean_onchain_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Clean and type on-chain data."""
-        # Ensure required columns exist
-        if 'transfers' in str(df.columns):
-            required_columns = [
-                'tx_hash', 'log_index', 'contract_address', 'from_address',
-                'to_address', 'value', 'token_symbol', 'token_decimal',
-                'block_number', 'block_timestamp', 'chain', 'raw_json'
-            ]
-        else:  # receipts
-            required_columns = [
-                'tx_hash', 'block_number', 'block_timestamp', 'from_address',
-                'to_address', 'value', 'gas_used', 'gas_price', 'status',
-                'chain', 'raw_json'
-            ]
-        
-        for col in required_columns:
-            if col not in df.columns:
-                df[col] = None
-        
-        # Type conversions
-        df['block_timestamp'] = pd.to_datetime(df['block_timestamp'], utc=True)
-        df['value'] = pd.to_numeric(df['value'], errors='coerce').fillna(0)
-        
-        if 'gas_used' in df.columns:
-            df['gas_used'] = pd.to_numeric(df['gas_used'], errors='coerce').fillna(0)
-        if 'gas_price' in df.columns:
-            df['gas_price'] = pd.to_numeric(df['gas_price'], errors='coerce').fillna(0)
-        if 'status' in df.columns:
-            df['status'] = pd.to_numeric(df['status'], errors='coerce').fillna(0)
-        if 'token_decimal' in df.columns:
-            df['token_decimal'] = pd.to_numeric(df['token_decimal'], errors='coerce').fillna(18)
-        
-        # Clean string columns
-        string_columns = ['tx_hash', 'contract_address', 'from_address', 'to_address',
-                         'token_symbol', 'chain']
+                         'base', 'quote', 'side', 'fee_currency', 'address', 'status', 'currency', 'symbol']
         for col in string_columns:
             if col in df.columns:
                 df[col] = df[col].astype(str).fillna('')
         
+        # Select only required columns
+        df = df[[col for col in required_columns if col in df.columns]]
+        
         return df
+    
+    def _clean_onchain_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Clean and type on-chain data from DeBank exports."""
+        # Map DeBank CSV columns to our schema
+        column_mapping = {
+            'txid': 'tx_hash',
+            'addr_from': 'from_address',
+            'addr_to': 'to_address',
+            'base': 'token_symbol',
+            'amount': 'value',
+            'ts_utc': 'block_timestamp',
+            'tx_type': 'side'
+        }
+        
+        # Rename columns if they exist
+        df = df.rename(columns=column_mapping)
+        
+        # Ensure required columns exist for raw_onchain_transfers
+        required_columns = {
+            'chain': '',
+            'tx_hash': '',
+            'log_index': 0,
+            'block_number': 0,
+            'block_timestamp': None,
+            'from_address': '',
+            'to_address': '',
+            'contract_address': '',
+            'token_symbol': '',
+            'token_decimal': 18,
+            'value': 0.0,
+            'side': '',
+            'tx_type': '',
+            'raw_json': ''
+        }
+        
+        for col, default in required_columns.items():
+            if col not in df.columns:
+                df[col] = default
+        
+        # Type conversions
+        df['block_timestamp'] = pd.to_datetime(df['block_timestamp'], utc=True, errors='coerce')
+        df['value'] = pd.to_numeric(df['value'], errors='coerce').fillna(0)
+        df['block_number'] = pd.to_numeric(df['block_number'], errors='coerce').fillna(0).astype(int)
+        df['log_index'] = pd.to_numeric(df['log_index'], errors='coerce').fillna(0).astype(int)
+        df['token_decimal'] = pd.to_numeric(df['token_decimal'], errors='coerce').fillna(18).astype(int)
+        
+        # Clean string columns
+        string_columns = ['chain', 'tx_hash', 'from_address', 'to_address', 
+                         'contract_address', 'token_symbol', 'side', 'tx_type', 'raw_json']
+        for col in string_columns:
+            if col in df.columns:
+                df[col] = df[col].astype(str).fillna('')
+        
+        # Select only the columns we need (in correct order)
+        # Exclude timestamp, year, month which are only for CSV partitioning
+        output_columns = list(required_columns.keys())
+        
+        # Filter to only keep columns that are in our schema
+        df_filtered = df[[col for col in output_columns if col in df.columns]]
+        
+        return df_filtered
     
     def create_staged_tables(self):
         """Create staged tables from raw data."""
