@@ -348,31 +348,35 @@ class DuckDBStager:
         self.conn.execute("DELETE FROM staged_exchanges")
         
         # Stage exchange data (only trades for now)
-        self.conn.execute("""
-            INSERT INTO staged_exchanges
-            SELECT 
-                'exchange' as domain,
-                source,
-                datetime as ts_utc,
-                txid,
-                base,
-                quote,
-                side,
-                amount,
-                price,
-                fee_currency as fee_ccy,
-                fee_amount as fee_amt,
-                address as addr_from,
-                '' as addr_to,
-                '' as chain,
-                '' as token_symbol,
-                NULL as token_decimal,
-                raw_json,
-                EXTRACT(YEAR FROM datetime) as year,
-                EXTRACT(MONTH FROM datetime) as month
-            FROM raw_exchanges_trades
-            WHERE txid IS NOT NULL AND txid != ''
-        """)
+        try:
+            self.conn.execute("""
+                INSERT INTO staged_exchanges
+                SELECT 
+                    'exchange' as domain,
+                    source,
+                    datetime as ts_utc,
+                    txid,
+                    symbol as base,
+                    '' as quote,
+                    side,
+                    amount,
+                    price,
+                    fee_currency as fee_ccy,
+                    fee as fee_amt,
+                    '' as addr_from,
+                    '' as addr_to,
+                    '' as chain,
+                    '' as token_symbol,
+                    NULL as token_decimal,
+                    raw_json,
+                    EXTRACT(YEAR FROM datetime) as year,
+                    EXTRACT(MONTH FROM datetime) as month
+                FROM raw_exchanges_trades
+                WHERE txid IS NOT NULL AND txid != ''
+            """)
+            logger.info("Staged exchange trades successfully")
+        except Exception as e:
+            logger.warning(f"No exchange trades to stage: {e}")
         
         # Create staged on-chain table
         self.conn.execute("""
