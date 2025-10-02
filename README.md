@@ -177,6 +177,17 @@ The pipeline includes comprehensive data quality checks:
 
 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions.
 
+## 🔗 Blockchain Data Sources
+
+For on-chain data export, you'll need an Ethereum RPC endpoint. See [BLOCKCHAIN_DATA_GUIDE.md](BLOCKCHAIN_DATA_GUIDE.md) for:
+
+- **Free RPC providers** (Ankr, Alchemy, Infura)
+- **Multi-chain APIs** (Moralis, QuickNode)
+- **Setup instructions** for different use cases
+- **Production recommendations**
+
+**Quick Start**: Use `ETH_RPC_URL=https://rpc.ankr.com/eth` (no API key required)
+
 ## 🤝 Contributing
 
 1. Fork the repository
