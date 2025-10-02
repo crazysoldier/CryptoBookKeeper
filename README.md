@@ -179,14 +179,23 @@ See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions.
 
 ## 🔗 Blockchain Data Sources
 
-For on-chain data export, you'll need an Ethereum RPC endpoint. See [BLOCKCHAIN_DATA_GUIDE.md](BLOCKCHAIN_DATA_GUIDE.md) for:
+### DeBank Cloud API (Recommended)
 
-- **Free RPC providers** (Ankr, Alchemy, Infura)
-- **Multi-chain APIs** (Moralis, QuickNode)
-- **Setup instructions** for different use cases
-- **Production recommendations**
+We use **DeBank Cloud API** for comprehensive on-chain data across multiple EVM chains.
 
-**Quick Start**: Use `ETH_RPC_URL=https://rpc.ankr.com/eth` (no API key required)
+**Setup:**
+1. Sign up at: https://cloud.debank.com/
+2. Purchase units (pay with USDC)
+3. Copy your Access Key
+4. Add to `.env`: `DEBANK_API_KEY=your_access_key`
+5. Add chains: `DEBANK_CHAINS=eth,polygon,arbitrum,optimism`
+
+**Important:** 
+- API endpoint: `https://pro-openapi.debank.com/v1`
+- Authentication: Use `AccessKey` header (not `Bearer`)
+- Rate limit: 100 requests/second
+
+See [BLOCKCHAIN_DATA_GUIDE.md](BLOCKCHAIN_DATA_GUIDE.md) for alternative providers.
 
 ## 🤝 Contributing
 

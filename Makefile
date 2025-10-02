@@ -41,11 +41,11 @@ export-exchanges:
 	. venv/bin/activate && python scripts/export_exchanges.py
 	@echo "Exchange data export completed!"
 
-# Export on-chain data
-export-eth:
-	@echo "Exporting on-chain Ethereum data..."
-	. venv/bin/activate && python scripts/export_onchain_eth.py
-	@echo "On-chain data export completed!"
+# Export on-chain data via DeBank API
+export-debank:
+	@echo "Exporting on-chain data via DeBank API..."
+	. venv/bin/activate && python scripts/export_debank.py
+	@echo "DeBank data export completed!"
 
 # Stage data in DuckDB
 stage:
@@ -72,7 +72,7 @@ dbt-docs:
 	@echo "dbt docs generated!"
 
 # Complete pipeline
-all: export-exchanges export-eth stage dbt
+all: export-exchanges export-debank stage dbt
 	@echo "Complete pipeline finished successfully!"
 
 # Run all tests
