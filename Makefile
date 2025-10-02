@@ -1,7 +1,7 @@
 # CryptoBookKeeper v0.1.0 - Makefile
 # Orchestrates the complete data pipeline
 
-.PHONY: help setup export-exchanges export-debank export-debank-incremental stage dbt all sync clean test troubleshoot
+.PHONY: help setup export-exchanges export-debank export-debank-incremental stage dbt excel all sync clean test troubleshoot
 
 # Default target
 help:
@@ -24,6 +24,9 @@ help:
 	@echo "Complete Pipeline:"
 	@echo "  all                        - Full refresh: export all + stage + dbt"
 	@echo "  sync                       - Incremental sync: new data only (FAST & CHEAP)"
+	@echo ""
+	@echo "Reports & Export:"
+	@echo "  excel                      - Export transactions to Excel (beautiful & formatted!)"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  test                       - Run all tests"
@@ -84,6 +87,12 @@ dbt-docs:
 	@echo "Generating dbt docs..."
 	. venv/bin/activate && cd dbt && dbt docs generate
 	@echo "dbt docs generated!"
+
+# Export to Excel
+excel:
+	@echo "📊 Exporting transactions to Excel..."
+	. venv/bin/activate && python scripts/export_excel.py
+	@echo "✅ Excel export completed! Check data/exports/ folder"
 
 # Complete pipeline (FULL REFRESH)
 all: export-exchanges export-debank stage dbt

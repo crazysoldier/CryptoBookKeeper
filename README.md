@@ -161,6 +161,7 @@ make export-debank            # Export on-chain data (full refresh)
 make export-debank-incremental # Export only new on-chain data (saves API costs)
 make stage                    # Stage data in DuckDB with upsert
 make dbt                      # Run dbt transformations
+make excel                    # Export transactions to formatted Excel workbook
 make all                      # Full pipeline (full refresh)
 make sync                     # Incremental pipeline (recommended for daily use)
 make clean                    # Clean generated files
@@ -247,6 +248,60 @@ TOTAL           101          61 (60%)        40
 - Rate limit: 100 requests/second
 
 See [DEBANK_SETUP.md](DEBANK_SETUP.md) for detailed setup instructions.
+
+## 📊 Excel Export
+
+CryptoBookKeeper can export your unified transaction data to a beautifully formatted Excel workbook.
+
+### Export to Excel
+
+```bash
+make excel
+```
+
+This creates a timestamped Excel file in `data/exports/` with the following sheets:
+
+### Sheet 1: 📈 Summary Dashboard
+- **Key Metrics**: Total transactions, exchange/on-chain breakdown, unique tokens, date range
+- **Breakdowns**: Transactions by source, transactions by chain
+- Clean, professional layout with formatted numbers
+
+### Sheet 2: 📋 All Transactions
+- Complete unified transaction view (all 118+ transactions)
+- **Columns**: Date, Source, Type, Token, Amount, Price, Fee, Chain, From, To
+- **Features**: Auto-filters, sortable columns, formatted dates and numbers
+- Perfect for quick analysis and filtering
+
+### Sheet 3: 💱 Exchange Transactions
+- All CEX trades, deposits, and withdrawals
+- **Columns**: Date, Exchange, Type, Token, Amount, Price, Total Value, Fee
+- Calculated total value (amount × price)
+- Currency formatting for easy reading
+
+### Sheet 4: ⛓️ On-Chain Transactions
+- All blockchain transfers across multiple chains
+- **Columns**: Date, Chain, Type, Token, Amount, From Address, To Address
+- Grouped by chain for easy filtering
+- Full address visibility for verification
+
+### Sheet 5: 📅 Yearly Summary
+- Year-by-year breakdown (2024, 2025, etc.)
+- **Metrics**: Total transactions, exchange vs on-chain, unique tokens per year
+- Perfect for annual reviews and tax preparation
+
+### Excel Features
+- **Auto-filters** on all data sheets
+- **Professional formatting**: Headers, currency, dates
+- **Sortable columns**: Click any header to sort
+- **Timestamped filenames**: Never overwrite your exports
+- **Lightweight**: ~20KB for 100+ transactions
+
+### Use Cases
+- 📊 **Portfolio analysis**: See all your transactions in one place
+- 💰 **Tax preparation**: Export and share with your accountant
+- 🔍 **Data validation**: Review transactions in familiar Excel format
+- 📈 **Reporting**: Create custom charts and pivot tables
+- 🗂️ **Archival**: Keep offline backups of your transaction history
 
 ## 🤝 Contributing
 
