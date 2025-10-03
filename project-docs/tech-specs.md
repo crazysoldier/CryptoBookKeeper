@@ -43,7 +43,6 @@
 ```python
 # Data Processing
 duckdb>=0.10.0,!=0.10.3    # OLAP Database
-polars==0.20.31             # Fast DataFrame
 
 # Exchange Integration
 ccxt==4.3.74               # Exchange APIs
@@ -63,11 +62,6 @@ tqdm==4.66.4               # Progress Bars
 requests==2.32.3           # HTTP Client
 ```
 
-#### Development Tools
-```python
-ruff==0.5.0                # Linting
-pre-commit==3.7.1          # Git Hooks
-```
 
 ### Datenbank-Schema
 

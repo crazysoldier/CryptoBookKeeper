@@ -3,22 +3,11 @@ ccxt==4.3.74
 
 # Database & Data Processing
 duckdb>=0.10.0,!=0.10.3
-polars==0.20.31
-
-# Blockchain Data
-# ethereum-etl has dependency conflicts (protobuf version)
-# Will be installed separately or use CLI directly
-
 
 # Utilities
 python-dotenv==1.0.1
 tqdm==4.66.4
 requests==2.32.3
-
-# Optional: Code Quality
-ruff==0.5.0
-pre-commit==3.7.1
-
 pandas==2.3.3
 numpy>=1.24.0,<2.0.0
 xlsxwriter>=3.1.9
