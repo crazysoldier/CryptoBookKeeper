@@ -44,7 +44,6 @@
 # Data Processing
 duckdb>=0.10.0,!=0.10.3    # OLAP Database
 polars==0.20.31             # Fast DataFrame
-pyarrow==16.1.0            # Parquet Support
 
 # Exchange Integration
 ccxt==4.3.74               # Exchange APIs
