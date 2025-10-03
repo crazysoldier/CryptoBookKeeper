@@ -4,7 +4,7 @@
 
 ### 1. Database Path Configuration Issues
 
-**Problem**: `Table with name raw_exchanges_trades does not exist!` errors in dbt.
+**Problem**: `Table with name raw_exchanges_trades does not exist!` errors.
 
 **Root Cause**: Database not initialized or wrong database path in `.env`.
 
@@ -35,11 +35,11 @@ pip uninstall pandas numpy
 pip install pandas==2.3.3 numpy>=1.24.0,<2.0.0
 ```
 
-### 3. dbt Model Conflicts
+### 3. Database Conflicts
 
 **Problem**: `infinite recursion detected` or `Existing object is of type View` errors.
 
-**Root Cause**: dbt creates views that conflict with staging script's table creation.
+**Root Cause**: Database schema conflicts or corrupted database.
 
 **Solution**:
 ```bash
@@ -48,18 +48,17 @@ make clean
 rm -f data/cryptobookkeeper.duckdb
 make export-exchanges
 make stage
-make dbt
 ```
 
 ### 4. Missing On-chain Data Errors
 
-**Problem**: `Table with name raw_onchain_transfers does not exist!` in dbt models.
+**Problem**: `Table with name raw_onchain_transfers does not exist!` errors.
 
-**Root Cause**: On-chain data export failed (no RPC URL configured) but dbt models expect the tables.
+**Root Cause**: On-chain data export failed (no DeBank API configured) but staging expects the tables.
 
 **Solution**: 
-- Configure `ETH_RPC_URL` in `.env` for on-chain data, OR
-- The models are now fixed to handle missing on-chain data gracefully
+- Configure `DEBANK_API_KEY` in `.env` for on-chain data, OR
+- The staging script now handles missing on-chain data gracefully
 
 ### 5. Exchange API Configuration Issues
 
@@ -157,8 +156,8 @@ make stage
 
 **Solution**:
 ```bash
-# Increase memory limit in dbt/profiles.yml
-memory_limit: '8GB'  # or higher
+# Increase DuckDB memory limit in .env
+DUCKDB_MEMORY_LIMIT=8GB
 ```
 
 ## 🔍 Debugging Commands
@@ -175,12 +174,16 @@ print('Trades count:', conn.execute('SELECT COUNT(*) FROM raw_exchanges_trades')
 "
 ```
 
-### Check dbt Models
+### Check Database Schema
 ```bash
-cd dbt
-dbt debug  # Check connection
-dbt compile  # Check for syntax errors
-dbt run --select raw_exchanges_trades  # Run specific model
+# Connect to DuckDB and inspect schema
+. venv/bin/activate
+python -c "
+import duckdb
+conn = duckdb.connect('data/cryptobookkeeper.duckdb')
+print('Tables:', conn.execute('SHOW TABLES').fetchall())
+print('Schema:', conn.execute('DESCRIBE transactions_unified').fetchall())
+"
 ```
 
 ### Check Logs

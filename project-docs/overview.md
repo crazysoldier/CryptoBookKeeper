@@ -16,7 +16,7 @@
 ### 2. Datenverarbeitung
 - **DuckDB**: In-Process OLAP-Datenbank für schnelle Analysen
 - **Parquet**: Spaltenorientiertes Storage-Format für Effizienz
-- **dbt**: Datenmodellierung und Transformationen
+- **DuckDB**: Datenmodellierung und Transformationen
 
 ### 3. Orchestrierung
 - **Makefile**: Reproduzierbare Pipeline-Ausführung
@@ -74,7 +74,7 @@
 - **Python 3.11+**: Hauptprogrammiersprache
 - **DuckDB**: In-Process OLAP-Datenbank
 - **Parquet**: Spaltenorientiertes Storage-Format
-- **dbt**: Datenmodellierung und Tests
+- **DuckDB**: Datenmodellierung und Tests
 
 ### Data Sources
 - **CCXT**: Exchange-API-Integration (100+ Exchanges)
@@ -87,9 +87,8 @@
 - **pandas**: Datenmanipulation (falls benötigt)
 
 ### Development Tools
-- **dbt-core & dbt-duckdb**: Datenmodellierung
-- **ruff**: Code-Qualität
-- **pre-commit**: Git-Hooks
+- **DuckDB**: Datenmodellierung
+- **Makefile**: Pipeline-Orchestrierung
 - **tqdm**: Progress-Bars
 
 ## Projektstruktur
@@ -111,13 +110,7 @@ crypto-normalizer-minimal/
 │   ├── export_onchain_eth.py  # On-Chain-Export
 │   └── stage_duckdb.py        # DuckDB-Staging
 ├── sql/                       # SQL-Scripts
-│   └── duckdb_init.sql        # DuckDB-Initialisierung
-├── dbt/                       # dbt-Projekt
-│   ├── dbt_project.yml        # dbt-Konfiguration
-│   ├── models/                # dbt-Modelle
-│   │   ├── raw/               # Raw-Modelle
-│   │   └── curated/           # Curated-Modelle
-│   └── seeds/                 # dbt-Seeds
+│   └── duckdb_init_simple.sql # DuckDB-Initialisierung
 ├── .env.template              # Umgebungsvariablen-Vorlage
 ├── .gitignore                 # Git-Ignore
 ├── Makefile                   # Orchestrierung
@@ -143,12 +136,12 @@ make export-eth              # On-Chain-Daten exportieren
 ### 3. Data Processing Phase
 ```bash
 make stage                   # DuckDB-Staging
-make dbt                     # dbt-Transformationen
+make excel                   # Excel-Export
 ```
 
 ### 4. Analysis Phase
 ```bash
-# Datenanalyse in DuckDB oder über dbt
+# Datenanalyse in DuckDB
 # Beispielberichte generieren
 ```
 
@@ -162,7 +155,7 @@ make dbt                     # dbt-Transformationen
 ### Für Analysten
 - **Unified Schema**: Einheitliche Sicht auf alle Transaktionen
 - **Performance**: DuckDB + Parquet für schnelle Analysen
-- **Flexibilität**: SQL-basierte Abfragen und dbt-Modelle
+- **Flexibilität**: SQL-basierte Abfragen und DuckDB-Modelle
 
 ### Für Unternehmen
 - **Compliance**: Vollständige Transaktionshistorie

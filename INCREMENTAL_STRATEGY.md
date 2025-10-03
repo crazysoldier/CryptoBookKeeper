@@ -34,8 +34,8 @@
 └─────────────────────────────────────────────────────────────┘
                            ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  Phase 3: dbt Incremental Materialization                   │
-│  - Use dbt incremental models                               │
+│  Phase 3: Optimized Processing                              │
+│  - Use incremental staging                                 │
 │  - Only process new/changed records                         │
 │  - Configurable merge strategy per model                    │
 └─────────────────────────────────────────────────────────────┘
@@ -186,11 +186,11 @@ def load_exchange_data_incremental(self):
         """)
 ```
 
-### 4. dbt Incremental Models
+### 4. Optimized Staging
 
-**A. Modify dbt models to use incremental materialization**
+**A. Modify staging script to use incremental processing**
 
-`dbt/models/curated/tx_unified.sql`:
+`scripts/stage_duckdb.py`:
 
 ```sql
 {{
@@ -243,10 +243,10 @@ models:
 
 ```makefile
 # Full refresh (existing behavior)
-all: export-exchanges export-debank stage dbt
+all: export-exchanges export-debank stage
 
 # Incremental update (NEW)
-sync: export-exchanges-incremental export-debank-incremental stage-incremental dbt-incremental
+sync: export-exchanges-incremental export-debank-incremental stage-incremental
 
 # Export only new data
 export-exchanges-incremental:
@@ -262,10 +262,10 @@ stage-incremental:
 	@echo "Staging with upsert logic..."
 	. venv/bin/activate && python scripts/stage_duckdb.py --incremental
 
-# dbt incremental run
-dbt-incremental:
-	@echo "Running dbt incremental models..."
-	. venv/bin/activate && cd dbt && dbt run --select state:modified+
+# Staging incremental run
+stage-incremental:
+	@echo "Running incremental staging..."
+	. venv/bin/activate && python scripts/stage_duckdb.py --incremental
 ```
 
 ## 🎯 Benefits
@@ -300,7 +300,7 @@ dbt-incremental:
 4. ✅ Create audit/history tables
 
 ### Phase 3 (Lower Priority - Optimization)
-1. ✅ Convert dbt models to incremental
+1. ✅ Convert staging to incremental
 2. ✅ Add partitioning strategy
 3. ✅ Implement backfill logic
 4. ✅ Add monitoring/alerting
@@ -359,12 +359,12 @@ GROUP BY source;
 4. **Set appropriate lookback windows** (e.g., 24 hours overlap)
 5. **Handle API errors gracefully** (retry with backoff)
 6. **Log all API calls** for debugging
-7. **Version your data models** in dbt
+7. **Version your data models** in staging
 
 ## 🔗 Resources
 
-- [dbt Incremental Models](https://docs.getdbt.com/docs/build/incremental-models)
 - [DuckDB UPSERT](https://duckdb.org/docs/sql/statements/insert.html)
+- [DuckDB Incremental Loading](https://duckdb.org/docs/guides/loading/incremental_loading)
 - [DeBank API Docs](https://docs.cloud.debank.com/)
 
 ---

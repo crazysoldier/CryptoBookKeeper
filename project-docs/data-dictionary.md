@@ -200,7 +200,7 @@ PARTITION BY (year(ts_utc), month(ts_utc))
 
 ## Datenvalidierung
 
-### dbt-Tests
+### DuckDB-Tests
 ```sql
 -- NOT NULL Tests
 SELECT * FROM {{ ref('transactions_unified') }}

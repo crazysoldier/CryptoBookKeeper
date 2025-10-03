@@ -16,8 +16,8 @@
 ├─────────────────────────────────────────────────────────────────┤
 │  Data Processing Layer                                          │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐           │
-│  │ Export      │  │ Staging     │  │ Transform   │           │
-│  │ Scripts     │  │ (DuckDB)    │  │ (dbt)       │           │
+│  │ Export      │  │ Staging     │  │ Unified     │           │
+│  │ Scripts     │  │ (DuckDB)    │  │ (Schema)    │           │
 │  └─────────────┘  └─────────────┘  └─────────────┘           │
 ├─────────────────────────────────────────────────────────────────┤
 │  Storage Layer                                                  │
@@ -52,9 +52,6 @@ web3>=6.0,<7.0            # Ethereum/EVM
 eth-typing>=3.0            # Type Definitions
 hexbytes>=1.0              # Hex Utilities
 
-# Data Modeling
-dbt-core>=1.7,<1.9         # Data Modeling
-dbt-duckdb>=1.7,<1.9      # DuckDB Adapter
 
 # Utilities
 python-dotenv==1.0.1       # Environment Variables
@@ -200,7 +197,7 @@ def stage_duckdb():
     staged_data.to_parquet("data/curated/", partition_by=['year', 'month'])
 ```
 
-### dbt-Modellierung
+### Data Processing
 
 #### Raw Models
 ```sql
@@ -292,18 +289,11 @@ df.write_parquet(
 )
 ```
 
-#### dbt-Optimierungen
-```yaml
-# dbt_project.yml
-models:
-  cryptobookkeeper:
-    staging:
-      materialized: table
-    curated:
-      materialized: table
-      indexes:
-        - ['ts_utc']
-        - ['domain', 'source']
+#### DuckDB Optimizations
+```sql
+-- Create indexes for performance
+CREATE INDEX idx_transactions_ts ON transactions_unified(ts_utc);
+CREATE INDEX idx_transactions_domain ON transactions_unified(domain, source);
 ```
 
 ### Fehlerbehandlung
@@ -416,7 +406,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Run tests
-        run: dbt test
+        run: make test
 ```
 
 ### Skalierung

@@ -22,7 +22,7 @@
 - **Partitionierung**: Zeitbasierte Partitionierung für Performance
 
 ### FR-004: Datenmodellierung
-- **Beschreibung**: dbt-basierte Transformationen und Tests
+- **Beschreibung**: DuckDB-basierte Transformationen und Tests
 - **Raw Models**: Quell-Daten-Modelle
 - **Staging Models**: Bereinigte und typisierte Daten
 - **Curated Models**: Business-ready Datensätze
@@ -58,7 +58,7 @@
 ### NFR-005: Wartbarkeit
 - **Code-Qualität**: Ruff-Linting und Pre-Commit-Hooks
 - **Dokumentation**: Umfassende Code- und API-Dokumentation
-- **Tests**: dbt-Tests für Datenqualität
+- **Tests**: DuckDB-Tests für Datenqualität
 
 ## Technische Anforderungen
 
@@ -97,7 +97,7 @@
 - **Type Hints**: Vollständige Typisierung
 
 ### QR-003: Test-Qualität
-- **dbt-Tests**: Datenqualitäts-Tests
+- **DuckDB-Tests**: Datenqualitäts-Tests
 - **Unit Tests**: Kritische Funktionen
 - **Integration Tests**: End-to-End-Pipeline
 - **Coverage**: Mindestens 80% Code-Coverage
@@ -124,7 +124,7 @@
 ### PR-001: Latenz
 - **Export**: < 5 Minuten für 1 Monat Daten
 - **Processing**: < 2 Minuten für Staging
-- **dbt**: < 1 Minute für Transformationen
+- **Staging**: < 1 Minute für Transformationen
 
 ### PR-002: Durchsatz
 - **API-Calls**: 100+ Requests/Minute
